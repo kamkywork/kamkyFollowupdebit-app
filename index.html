@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบติดตามยอด - Collection Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background: #f4f6f9; margin: 0; padding: 0; }
+        
+        /* Header & Controls */
+        .header { background: #2c3e50; color: white; padding: 15px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .header h2 { margin: 0; font-size: 18px; }
+        
+        .date-picker-container { display: flex; gap: 5px; margin-top: 10px; flex-wrap: wrap; }
+        .date-picker-container input { flex: 1; padding: 8px; border-radius: 4px; border: none; min-width: 120px; }
+        
+        .btn-tool { border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 5px; color: white; transition: 0.2s; }
+        .btn-refresh { background: #f39c12; }
+        .btn-report { background: #34495e; }
+        .btn-excel { background: #27ae60; }
+        .btn-reset-hide { background: #95a5a6; }
+        .btn-tool:hover { filter: brightness(1.1); }
+
+        /* Performance Board (New) */
+        .perf-container { padding: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        @media (max-width: 600px) { .perf-container { grid-template-columns: 1fr; } }
+
+        .perf-card { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .perf-title { font-size: 14px; color: #7f8c8d; margin-bottom: 5px; display: flex; justify-content: space-between; }
+        .perf-percent { font-size: 24px; font-weight: bold; color: #2c3e50; }
+        
+        /* Progress Bar */
+        .progress-bg { height: 8px; background: #ecf0f1; border-radius: 4px; margin: 10px 0; overflow: hidden; }
+        .progress-fill { height: 100%; background: #27ae60; width: 0%; transition: width 0.5s ease; }
+        
+        .perf-detail { display: flex; justify-content: space-between; font-size: 12px; color: #555; }
+
+        /* Summary Stats (Small) */
+        .summary-mini { display: flex; gap: 10px; padding: 0 15px; overflow-x: auto; }
+        .mini-stat { background: #fff; padding: 8px 12px; border-radius: 6px; font-size: 12px; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex:1; text-align:center;}
+
+        .list-container { padding: 15px; }
+
+        /* Card Design */
+        .customer-card {
+            background: white; border-radius: 10px; margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow: hidden;
+            position: relative;
+        }
+
+        .card-banner {
+            padding: 8px 15px; color: white; font-weight: bold; font-size: 14px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .banner-dark-red { background: linear-gradient(135deg, #b71c1c 0%, #d32f2f 100%); }
+        .banner-red { background: #c0392b; }      
+        .banner-orange { background: #e67e22; }   
+        .banner-yellow { background: #f1c40f; color: #2c3e50; } 
+        .banner-purple { background: #8e44ad; }   
+
+        .btn-menu-card {
+            background: rgba(255,255,255,0.2); border: none; color: white; width: 30px; height: 30px;
+            border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: 0.2s; margin-left: 10px;
+        }
+
+        .card-content { padding: 15px; }
+        .cust-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .cust-name { font-weight: bold; font-size: 16px; color: #2c3e50; }
+        .cust-id { font-size: 12px; color: #7f8c8d; background: #ecf0f1; padding: 2px 8px; border-radius: 10px; }
+        .cust-detail { font-size: 14px; margin-bottom: 5px; color: #555; display: flex; align-items: center; gap: 8px; }
+        .amount-highlight { font-size: 24px; font-weight: bold; color: #2c3e50; margin: 15px 0 10px; text-align: right; border-top: 1px dashed #eee; padding-top: 10px; }
+        .amount-sub { font-size: 13px; color: #e74c3c; font-weight: normal; display: block; margin-top: -5px;}
+
+        .action-bar { display: flex; gap: 10px; margin-top: 10px; }
+        .btn-action { flex: 1; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .btn-pay { background: #27ae60; color: white; }
+        .btn-postpone { background: #95a5a6; color: white; }
+        .btn-call { background: #3498db; color: white; text-decoration: none; }
+        .btn-postpone.active { background: #8e44ad; border: 1px solid #732d91; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h2>📊 Dashboard ติดตามหนี้</h2>
+            <span id="currentTime" style="font-size:12px; opacity:0.8;"></span>
+        </div>
+        
+        <div class="date-picker-container">
+            <input type="date" id="filterDate" onchange="loadData()">
+            <button class="btn-tool btn-refresh" onclick="loadData()"><i class="fas fa-sync-alt"></i></button>
+            <button class="btn-tool btn-report" onclick="printReport()"><i class="fas fa-print"></i></button>
+            <button class="btn-tool btn-excel" onclick="exportToExcel()"><i class="fas fa-file-excel"></i></button>
+            <button class="btn-tool btn-reset-hide" onclick="resetHidden()" title="แสดงรายการที่ซ่อนทั้งหมด"><i class="fas fa-eye"></i></button>
+        </div>
+    </div>
+
+    <div class="perf-container">
+        <div class="perf-card">
+            <div class="perf-title">
+                <span><i class="fas fa-calendar-day"></i> ผลงานวันนี้</span>
+                <span id="txtTodayTarget" style="font-size:12px;">เป้า: 0</span>
+            </div>
+            <div class="perf-percent" id="todayPercent">0%</div>
+            <div class="progress-bg">
+                <div class="progress-fill" id="progToday"></div>
+            </div>
+            <div class="perf-detail">
+                <span>เก็บได้: <b class="text-green" id="txtTodayCollected">0</b></span>
+                <span>เหลือ: <b class="text-red" id="txtTodayPending">0</b></span>
+            </div>
+        </div>
+
+        <div class="perf-card">
+            <div class="perf-title">
+                <span><i class="fas fa-calendar-alt"></i> ภาพรวมเดือนนี้</span>
+                <span id="txtMonthTarget" style="font-size:12px;">เป้า: 0</span>
+            </div>
+            <div class="perf-percent" id="monthPercent">0%</div>
+            <div class="progress-bg">
+                <div class="progress-fill" id="progMonth" style="background:#3498db;"></div>
+            </div>
+            <div class="perf-detail">
+                <span>รวมเก็บได้: <b style="color:#2980b9;" id="txtMonthCollected">0</b></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="list-container" id="contractList">
+        <div style="text-align:center; padding:20px; color:#aaa;">กำลังโหลดข้อมูล...</div>
+    </div>
+
+    <script>
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxwv-zrFtI-CFSkAtK5NnLfsAnc5n4gWIkXYICUnKfhUG6twkyE6hvKNlGqTFQ288xW/exec'; 
+
+        let currentTrackingData = [];
+        let filteredData = []; 
+        document.getElementById('filterDate').valueAsDate = new Date();
+
+        function formatDateToThai(dateString) {
+            if(!dateString) return "";
+            const p = dateString.split('-');
+            return `${p[2]}/${p[1]}/${p[0]}`; 
+        }
+
+        async function loadData() {
+            const date = document.getElementById('filterDate').value;
+            const container = document.getElementById('contractList');
+            container.innerHTML = '<div style="text-align:center; padding:20px; color:#aaa;"><i class="fas fa-spinner fa-spin"></i> กำลังโหลด...</div>';
+
+            try {
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'get_tracking', date: date })
+                });
+                const data = await response.json();
+                currentTrackingData = data.contracts || [];
+                renderDashboard(data, date);
+
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = '<div style="color:red; text-align:center;">เกิดข้อผิดพลาดในการโหลดข้อมูล</div>';
+            }
+        }
+
+        function renderDashboard(data, selectedDate) {
+            const container = document.getElementById('contractList');
+            container.innerHTML = "";
+
+            // 1. Prepare Hidden Data
+            const rawHidden = JSON.parse(localStorage.getItem('hiddenContracts') || '[]');
+            const hiddenContracts = rawHidden.map(String); 
+
+            const selectedDateThai = formatDateToThai(selectedDate);
+            filteredData = [];
+            let displayCount = 0;
+            let calculatedPendingToday = 0; // ยอดที่ต้องเก็บวันนี้ (คำนวณใหม่หลังซ่อน)
+
+            // --- Loop Filter & Calculate Pending ---
+            if (data.contracts && data.contracts.length > 0) {
+                data.contracts.forEach(c => {
+                    const currentCNo = String(c.c_no).trim();
+                    if (hiddenContracts.includes(currentCNo)) return;
+
+                    const hasPostpone = (c.postpone_date && c.postpone_date !== "-" && c.postpone_date !== "");
+                    let shouldShow = false;
+
+                    if (hasPostpone) {
+                        if (c.postpone_date === selectedDateThai) shouldShow = true;
+                    } else {
+                        const isDueToday = (c.due_date === selectedDateThai);
+                        const isOverdue = (c.status.includes("เกินกำหนด") || c.overdue_count > 0);
+                        if (isDueToday || isOverdue) shouldShow = true;
+                    }
+
+                    if (!shouldShow) return;
+
+                    // คำนวณยอดเงินของรายการนี้
+                    let overdueCount = c.overdue_count || 0;
+                    let itemAmount = parseFloat(c.amount);
+                    if (overdueCount > 1) itemAmount = itemAmount * overdueCount;
+
+                    // บวกยอด pending
+                    calculatedPendingToday += itemAmount;
+                    filteredData.push({ ...c, finalAmount: itemAmount, overdueCount: overdueCount, hasPostpone: hasPostpone });
+                    displayCount++;
+                });
+            }
+
+            // 2. Performance Calculation (ส่วนคำนวณเปอร์เซ็นต์)
+            
+            // --- วันนี้ ---
+            const collectedToday = data.summary.total_collected_today || 0;
+            // เป้าวันนี้ = ที่เก็บได้แล้ว + ที่เหลือต้องเก็บ (calculatedPendingToday)
+            const targetToday = collectedToday + calculatedPendingToday; 
+            const percentToday = targetToday > 0 ? (collectedToday / targetToday) * 100 : 0;
+
+            document.getElementById('txtTodayTarget').innerText = `เป้า: ${targetToday.toLocaleString()}`;
+            document.getElementById('txtTodayCollected').innerText = collectedToday.toLocaleString();
+            document.getElementById('txtTodayPending').innerText = calculatedPendingToday.toLocaleString();
+            document.getElementById('todayPercent').innerText = `${Math.round(percentToday)}%`;
+            document.getElementById('progToday').style.width = `${percentToday}%`;
+
+            // --- เดือนนี้ ---
+            const collectedMonth = data.summary.total_collected_month || 0;
+            // *หมายเหตุ: ต้องแก้ Backend ให้ส่ง expected_month มาด้วย ถ้าไม่มีจะใช้ 0
+            const targetMonth = data.summary.expected_month || data.summary.total_expected_month || 0; 
+            const percentMonth = targetMonth > 0 ? (collectedMonth / targetMonth) * 100 : 0;
+
+            document.getElementById('txtMonthTarget').innerText = `เป้า: ${targetMonth.toLocaleString()}`;
+            document.getElementById('txtMonthCollected').innerText = collectedMonth.toLocaleString();
+            document.getElementById('monthPercent').innerText = `${Math.round(percentMonth)}%`;
+            document.getElementById('progMonth').style.width = `${percentMonth}%`;
+
+            // 3. Render List (ส่วนแสดงการ์ด)
+            if (displayCount === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:20px; color:#aaa;">ไม่พบรายการที่ต้องติดตามวันนี้</div>';
+                return;
+            }
+
+            filteredData.forEach(c => {
+                let bannerClass = "";
+                let statusText = c.status;
+                let iconClass = "";
+                let postponeClass = "";
+
+                if (c.status.includes("เกินกำหนด")) {
+                    if (c.overdueCount > 1) {
+                        bannerClass = "banner-dark-red"; 
+                        statusText = `ค้างชำระ ${c.overdueCount} งวด !!`;
+                        iconClass = "fa-exclamation-triangle";
+                    } else {
+                        bannerClass = "banner-red"; 
+                        iconClass = "fa-exclamation-circle";
+                    }
+                } else if (c.status.includes("ครบกำหนด")) {
+                    bannerClass = "banner-yellow";
+                    iconClass = "fa-bell";
+                } else if (c.status.includes("ใกล้ถึง")) {
+                    bannerClass = "banner-orange";
+                    statusText = "ใกล้ถึงกำหนด";
+                    iconClass = "fa-clock";
+                }
+                
+                if (c.hasPostpone) {
+                    bannerClass = "banner-purple";
+                    statusText = `เลื่อนนัดมา: ${c.postpone_date}`;
+                    iconClass = "fa-calendar-check";
+                    postponeClass = "active";
+                }
+
+                const html = `
+                <div class="customer-card">
+                    <div class="card-banner ${bannerClass}">
+                        <div style="display:flex; align-items:center; gap:5px;">
+                            <i class="fas ${iconClass}"></i> 
+                            <span>${statusText}</span>
+                        </div>
+                        <div style="display:flex; align-items:center;">
+                            <span style="font-size:12px; opacity:0.9;">งวดที่ ${c.installment_no}</span>
+                            <button class="btn-menu-card" onclick="openManageMenu(${c.row_index}, '${c.b_name}', '${c.c_no}')">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="card-content">
+                        <div class="cust-row">
+                            <div class="cust-name">${c.b_name}</div>
+                            <div class="cust-id">${c.c_no}</div>
+                        </div>
+                        <div class="cust-detail"><i class="fas fa-calendar-day"></i> กำหนดจ่าย: ${c.due_date}</div>
+                        <div class="cust-detail"><i class="fas fa-phone-alt"></i> ${c.b_mobile || '-'}</div>
+
+                        <div class="amount-highlight">
+                            ${c.overdueCount > 1 ? `<span class="amount-sub">(ค้าง ${c.overdueCount} งวด)</span>` : ''}
+                            ฿ ${c.finalAmount.toLocaleString()}
+                        </div>
+
+                        <div class="action-bar">
+                            <a href="tel:${c.b_mobile}" class="btn-action btn-call"><i class="fas fa-phone"></i> โทร</a>
+                            <button class="btn-action btn-postpone ${postponeClass}" 
+                                onclick="openPostpone(${c.row_index}, '${c.b_name}', '${c.postpone_date || ''}')">
+                                <i class="fas fa-clock"></i> ${c.hasPostpone ? 'แก้ไขนัด' : 'เลื่อน'}
+                            </button>
+                            <button class="btn-action btn-pay" onclick="openPay('${c.c_no}')"><i class="fas fa-wallet"></i> จ่าย</button>
+                        </div>
+                    </div>
+                </div>`;
+                container.innerHTML += html;
+            });
+        }
+
+        // --- Functions (Hide/Postpone/Report/etc.) ---
+        function hideContract(c_no) {
+            const contractId = String(c_no).trim();
+            let hidden = JSON.parse(localStorage.getItem('hiddenContracts') || '[]');
+            hidden = hidden.map(String);
+
+            if (!hidden.includes(contractId)) {
+                hidden.push(contractId);
+                localStorage.setItem('hiddenContracts', JSON.stringify(hidden));
+                Swal.fire({ icon: 'success', title: 'ซ่อนรายการแล้ว', timer: 1000, showConfirmButton: false })
+                    .then(() => loadData());
+            } else { loadData(); }
+        }
+
+        function resetHidden() {
+            Swal.fire({
+                title: 'แสดงรายการทั้งหมด?', text: 'ยกเลิกการซ่อนรายการทั้งหมด', icon: 'warning',
+                showCancelButton: true, confirmButtonText: 'ยืนยัน', confirmButtonColor: '#3498db'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    localStorage.removeItem('hiddenContracts');
+                    loadData();
+                }
+            });
+        }
+
+        function openManageMenu(idx, name, c_no) {
+            Swal.fire({
+                title: 'จัดการสัญญา', html: `<b>${name}</b> (${c_no})`, icon: 'info',
+                showCancelButton: true, showDenyButton: true,
+                confirmButtonText: '<i class="fas fa-eye-slash"></i> ซ่อน', confirmButtonColor: '#7f8c8d', 
+                denyButtonText: 'ลบ/ยกเลิก', denyButtonColor: '#c0392b', cancelButtonText: 'ปิด'
+            }).then((result) => {
+                if (result.isConfirmed) hideContract(c_no);
+                else if (result.isDenied) openDeleteCancelMenu(idx, name, c_no);
+            });
+        }
+
+        function openDeleteCancelMenu(idx, name, c_no) {
+            Swal.fire({
+                title: 'ลบหรือยกเลิก', html: `รายการ: <b>${name}</b>`, icon: 'warning',
+                showCancelButton: true, showDenyButton: true,
+                confirmButtonText: 'ยกเลิกสัญญา (Cancel)', confirmButtonColor: '#e67e22',
+                denyButtonText: 'ลบข้อมูล (Delete)', denyButtonColor: '#c0392b'
+            }).then((result) => {
+                if (result.isConfirmed) confirmAction(idx, 'cancel_contract', 'ยืนยันยกเลิกสัญญา?');
+                else if (result.isDenied) confirmAction(idx, 'delete_contract', 'ยืนยันลบถาวร?');
+            });
+        }
+
+        function confirmAction(idx, actionType, msg) {
+            Swal.fire({ title: msg, icon: 'question', showCancelButton: true, confirmButtonText: 'ยืนยัน' })
+                .then((r) => { if (r.isConfirmed) executeBackendAction(idx, actionType); });
+        }
+
+        async function executeBackendAction(idx, actionType) {
+            Swal.fire({ title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            try {
+                await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: actionType, row_index: idx }) });
+                Swal.fire({ icon: 'success', title: 'เรียบร้อย', timer: 1500, showConfirmButton: false });
+                loadData();
+            } catch (error) { Swal.fire('Error', 'เกิดข้อผิดพลาด', 'error'); }
+        }
+
+        function openPostpone(idx, name, currentDate) {
+            Swal.fire({
+                title: 'วันเลื่อนนัด', html: `<b>${name}</b><br>เดิม: ${currentDate||'-'}`, icon: 'question',
+                showDenyButton: true, showCancelButton: true,
+                confirmButtonText: 'เปลี่ยนวัน', denyButtonText: 'ลบนัด', cancelButtonText: 'ปิด',
+                confirmButtonColor: '#f39c12', denyButtonColor: '#c0392b'
+            }).then((result) => {
+                if (result.isConfirmed) showDatePicker(idx, name, ''); 
+                else if (result.isDenied) savePostponeData(idx, "");
+            });
+        }
+
+        function showDatePicker(idx, name, defaultVal) {
+            Swal.fire({ title: 'ระบุวันนัดใหม่', input: 'date', inputValue: defaultVal, showCancelButton: true, confirmButtonText: 'บันทึก' })
+                .then((r) => { if(r.isConfirmed && r.value) savePostponeData(idx, r.value); });
+        }
+
+        async function savePostponeData(idx, dateValue) {
+            Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            try {
+                await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'postpone', row_index: idx, new_date: dateValue }) });
+                Swal.fire({ icon: 'success', title: 'เรียบร้อย', timer: 1500, showConfirmButton: false });
+                loadData();
+            } catch (e) { Swal.fire('Error', 'บันทึกไม่สำเร็จ', 'error'); }
+        }
+
+        function printReport() {
+            // ตรวจสอบว่ามีข้อมูลหรือไม่
+            if (!filteredData || filteredData.length === 0) { 
+                Swal.fire('ไม่มีข้อมูล', '', 'info'); 
+                return; 
+            }
+            
+            // เตรียมวันที่สำหรับหัวกระดาษ
+            const selectDate = document.getElementById('filterDate').value;
+            const dateParts = selectDate.split('-');
+            const thaiDate = `${dateParts[2]}/${dateParts[1]}/${parseInt(dateParts[0])+543}`;
+            
+            let printWindow = window.open('', '', 'height=800,width=1000');
+            
+            let tableRows = '';
+            let totalAmount = 0;
+            
+            filteredData.forEach((item, index) => {
+                let overdueCount = item.overdue_count || 0;
+                let finalAmount = item.finalAmount || (parseFloat(item.amount) * (overdueCount > 1 ? overdueCount : 1));
+                
+                // --- ส่วนการแสดงผลสถานะ (แก้ไขใหม่) ---
+                let displayStatus = item.status; 
+                
+                // 1. ตรวจสอบสถานะ "เลื่อนนัด" ก่อนเป็นอันดับแรก
+                if(item.postpone_date && item.postpone_date !== "-" && item.postpone_date !== "") {
+                     // รูปแบบ: วันที่ตามงวด <br> (เลื่อนไป: วันที่ขอเลื่อน)
+                     displayStatus = `${item.due_date} <br><span style="font-size:12px; color:#8e44ad; font-weight:bold;">(เลื่อนไป: ${item.postpone_date})</span>`;
+                }
+                // 2. ถ้าไม่ใช่การเลื่อนนัด แต่ "ค้างชำระ" มากกว่า 1 งวด
+                else if(overdueCount > 1) {
+                    displayStatus = `<span style="color:red;font-weight:bold;">ค้าง ${overdueCount} งวด</span>`;
+                }
+                // 3. กรณีปกติ (แสดงตามสถานะเดิม เช่น "ครบกำหนดวันนี้")
+                
+                totalAmount += finalAmount;
+                
+                tableRows += `<tr>
+                    <td style="text-align:center;">${index + 1}</td>
+                    <td style="text-align:center;">${item.c_no}</td>
+                    <td><b>${item.b_name}</b><br><span style="font-size:12px;color:#555;">${item.b_mobile||'-'}</span></td>
+                    <td style="text-align:center;">${item.installment_no}</td>
+                    <td style="text-align:right; font-weight:bold;">${finalAmount.toLocaleString()}</td>
+                    <td style="text-align:center; font-size:14px;">${displayStatus}</td>
+                    <td style="border-bottom:1px solid #ddd;"></td>
+                </tr>`;
+            });
+            
+            let htmlContent = `
+            <html>
+            <head>
+                <title>ใบงานติดตามหนี้</title>
+                <link href="https://fonts.googleapis.com/css2?family=Sarabun&display=swap" rel="stylesheet">
+                <style>
+                    body { font-family: 'Sarabun', sans-serif; padding: 20px; }
+                    h2 { margin-bottom: 5px; }
+                    .header-info { text-align:center; margin-bottom: 20px; color: #555; font-size: 14px; }
+                    table { width: 100%; border-collapse: collapse; }
+                    th, td { border: 1px solid #000; padding: 8px; vertical-align: middle; }
+                    th { background: #f2f2f2; height: 35px; }
+                </style>
+            </head>
+            <body>
+                <h2 style="text-align:center;">ใบงานติดตามหนี้ประจำวัน</h2>
+                <div class="header-info">
+                    ประจำวันที่: <b>${thaiDate}</b> (พิมพ์เมื่อ: ${new Date().toLocaleTimeString('th-TH')})
+                </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="5%">#</th>
+                            <th width="15%">เลขสัญญา</th>
+                            <th width="25%">ชื่อ / เบอร์โทร</th>
+                            <th width="8%">งวด</th>
+                            <th width="15%">ยอดเก็บ (บาท)</th>
+                            <th width="20%">สถานะ / กำหนดจ่าย</th>
+                            <th>หมายเหตุ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRows}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" style="text-align:right;font-weight:bold; height:40px;">รวมยอดที่ต้องเก็บทั้งหมด</td>
+                            <td style="text-align:right;font-weight:bold;font-size:16px;">${totalAmount.toLocaleString()}</td>
+                            <td colspan="2">บาท</td>
+                        </tr>
+                    </tfoot>
+                </table>
+                
+                <script>
+                    window.onload = function() { window.print(); }
+                <\/script>
+            </body>
+            </html>`;
+            
+            printWindow.document.write(htmlContent); 
+            printWindow.document.close();
+        }
+
+        function exportToExcel() {
+            if (!filteredData.length) { Swal.fire('ไม่มีข้อมูล', '', 'info'); return; }
+            let csv = "data:text/csv;charset=utf-8,\uFEFFลำดับ,เลขสัญญา,ชื่อ,เบอร์,งวด,ยอด,สถานะ\n";
+            filteredData.forEach((i, idx) => csv += `${idx+1},"${i.c_no}","${i.b_name}","${i.b_mobile}",${i.installment_no},${i.finalAmount},${i.status}\n`);
+            const link = document.createElement("a"); link.href = encodeURI(csv); link.download = "Tracking_Report.csv"; link.click();
+        }
+
+        function openPay(c_no) {
+            // -------------------------------------------------------
+            // 👇 1. ลบชื่อไฟล์เดิม แล้วใส่ URL Web App ของคุณลงไปในเครื่องหมายคำพูด
+            // -------------------------------------------------------
+            const billWebAppUrl = "https://script.google.com/macros/s/AKfycbxMppKDUF81jzlUfgyQLBglhTkfI0xuucqPSTFIgV4j62l_Js4ac1_DIJNrV1NPAy0h7g/exec"; 
+            
+            // 2. สั่งเปิดลิงก์พร้อมแนบเลขสัญญา (?ref=...)
+            // ไม่ต้องแก้อะไรตรงนี้ ระบบจะต่อท้าย URL ให้เอง
+            window.open(`${billWebAppUrl}?ref=${c_no}`, '_blank');
+        }
+        
+        window.onload = loadData;
+    </script>
+</body>
+</html>
