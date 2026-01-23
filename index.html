@@ -2,8 +2,8 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบติดตามยอด - Collection System (V.16 Final Original)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ระบบติดตามยอด - Collection System (V.48 Final Perfect)</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -11,7 +11,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         /* =========================================================================
-           1. CSS ต้นฉบับจาก V.16 (ห้ามแก้ไขแม้แต่บรรทัดเดียว เพื่อรักษาหน้าตาเดิม)
+           CORE STYLES
            ========================================================================= */
         :root {
             --primary: #4361ee;
@@ -29,21 +29,19 @@
 
         body { font-family: 'Sarabun', sans-serif; background: var(--bg); margin: 0; padding: 0; color: var(--dark); -webkit-font-smoothing: antialiased; }
         
-        .header { 
-            background: #ffffff; padding: 15px 20px; position: sticky; top: 0; z-index: 100; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;
-        }
+        /* Header */
+        .header { background: #ffffff; padding: 15px 20px; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
         .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .header h2 { margin: 0; font-size: 20px; font-weight: 700; color: var(--dark); display: flex; align-items: center; gap: 8px; }
-        .tools-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
+        .tools-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+        .tools-bar::-webkit-scrollbar { display: none; }
         .date-input { border: 1px solid #e0e0e0; background: #f9f9f9; padding: 8px 12px; border-radius: 10px; min-width: 130px; font-family: 'Sarabun'; }
         
+        /* Buttons */
         .btn-icon, .btn-pill { border: none; border-radius: 10px; cursor: pointer; transition: 0.2s; color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .btn-icon { width: 38px; height: 38px; flex-shrink: 0; }
         .btn-pill { padding: 8px 15px; font-size: 13px; font-weight: 600; gap: 5px; border-radius: 20px; white-space: nowrap; }
         .btn-icon:hover, .btn-pill:hover { transform: translateY(-2px); }
-        
         .btn-refresh { background: var(--warning); }
         .btn-print { background: var(--dark); }
         .btn-excel { background: #20bf6b; }
@@ -51,9 +49,8 @@
         .btn-daily { background: linear-gradient(135deg, #ff9f43, #ee5253); }
         .btn-monthly { background: linear-gradient(135deg, #54a0ff, #5f27cd); }
 
+        /* Dashboard */
         .perf-container { padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        @media (max-width: 600px) { .perf-container { grid-template-columns: 1fr; } }
-        
         .stat-card { background: white; border-radius: var(--card-radius); padding: 20px; box-shadow: var(--shadow); }
         .stat-header { display: flex; justify-content: space-between; margin-bottom: 15px; font-weight: 600; color: var(--gray); }
         .chart-box { height: 140px; position: relative; margin-bottom: 15px; }
@@ -61,71 +58,57 @@
         .stat-item h4 { margin: 0; font-size: 16px; color: var(--dark); }
         .stat-item span { font-size: 11px; color: var(--gray); }
 
-        .list-container { padding: 0 20px 40px 20px; max-width: 800px; margin: 0 auto; }
+        /* List & Card */
+        .list-container { padding: 0 20px 80px 20px; max-width: 800px; margin: 0 auto; }
         .section-title { font-size: 14px; color: var(--gray); margin-bottom: 10px; font-weight: 600; padding-left: 5px; }
-
-        .cust-card { 
-            border-radius: var(--card-radius); margin-bottom: 20px; 
-            box-shadow: var(--shadow); position: relative; overflow: visible;
-            border-left: 5px solid transparent; 
-            transition: transform 0.2s;
-        }
-        
-        .card-normal { background: white; border-left-color: #ddd; }
+        .cust-card { border-radius: var(--card-radius); margin-bottom: 20px; box-shadow: var(--shadow); position: relative; overflow: visible; border-left: 5px solid transparent; transition: transform 0.2s; background: white; }
+        .card-normal { border-left-color: #ddd; }
         .card-postpone { background: #fbf5ff; border-left-color: #9b59b6; }
         .card-overdue { background: #fff0f0; border-left-color: #e74c3c; }
+        .card-pending-approve { background: #fffdf5; border-left-color: #ffca28; } 
 
         .cust-header { padding: 15px 15px 5px 15px; display: flex; justify-content: space-between; align-items: flex-start; }
-        .cust-info h3 { margin: 0 0 4px 0; font-size: 17px; color: var(--dark); }
-        .cust-id { font-size: 11px; color: var(--gray); background: rgba(255,255,255,0.6); padding: 3px 8px; border-radius: 6px; display: inline-block; border: 1px solid rgba(0,0,0,0.05); }
-        
+        .cust-info { flex: 1; min-width: 0; }
+        .cust-info h3 { margin: 0 0 4px 0; font-size: 17px; color: var(--dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cust-id { font-size: 11px; color: var(--gray); background: rgba(0,0,0,0.03); padding: 3px 8px; border-radius: 6px; display: inline-block; border: 1px solid rgba(0,0,0,0.05); }
+        .status-badge { text-align: right; margin-left: 10px; flex-shrink: 0; }
         .status-text { font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 5px; }
-        .text-red { color: #c0392b; }
-        .text-purple { color: #8e44ad; }
-        .text-green { color: #27ae60; }
-
+        .text-red { color: #c0392b; } .text-purple { color: #8e44ad; } .text-green { color: #27ae60; } .text-orange { color: #f39c12; }
         .btn-kebab { border: none; background: transparent; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--gray); }
-        .btn-kebab:hover { background: rgba(0,0,0,0.05); color: var(--dark); }
-
-        .cust-body { padding: 0 15px 15px 15px; display: flex; justify-content: space-between; align-items: flex-end; }
+        
+        .cust-body { padding: 0 15px 15px 15px; display: flex; justify-content: space-between; align-items: flex-end; margin-top: 5px;}
         .contact-line { font-size: 13px; color: #555; display: flex; align-items: center; gap: 6px; margin-top: 5px; }
         .amount-val { font-size: 22px; font-weight: 800; color: var(--dark); letter-spacing: -0.5px; }
 
-        .cust-actions { padding: 10px 15px; background: rgba(255,255,255,0.5); border-top: 1px solid rgba(0,0,0,0.05); display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; border-bottom-left-radius: var(--card-radius); border-bottom-right-radius: var(--card-radius); }
-        .btn-act { border: none; padding: 10px; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        /* Action Buttons */
+        .cust-actions { 
+            padding: 10px 15px; background: rgba(245, 247, 250, 0.5); 
+            border-top: 1px solid rgba(0,0,0,0.05); 
+            display: grid; gap: 10px; 
+            border-bottom-left-radius: var(--card-radius); border-bottom-right-radius: var(--card-radius); 
+        }
+        .btn-act { border: none; padding: 10px; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; height: 40px; }
         .btn-act-call { background: white; color: var(--secondary); border: 1px solid #e0e0e0; text-decoration: none; }
         .btn-act-postpone { background: white; color: #7e22ce; border: 1px solid #e0e0e0; }
         .btn-act-pay { background: var(--dark); color: white; }
-
+        .btn-act-contract { background: #34495e; color: white; } 
+        .user-checkbox-btn { background: white; border: 1px solid #ddd; color: #555; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px; justify-content: flex-start; transition: 0.2s; height: 40px; }
+        .user-checkbox-btn:active { background: #eef2ff; border-color: var(--primary); color: var(--primary); }
         .loading-state { text-align: center; padding: 40px; color: var(--gray); }
 
-        /* =========================================================================
-           2. เพิ่ม CSS ส่วน Login แยกออกมา (ไม่กระทบของเก่า)
-           ========================================================================= */
-        .login-overlay { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(43, 45, 66, 0.98); z-index: 9000; 
-            display: flex; align-items: center; justify-content: center; 
+        /* Mobile Styles */
+        @media (max-width: 600px) {
+            .perf-container { grid-template-columns: 1fr; gap: 15px; padding: 15px; }
+            .header { padding: 15px; }
+            /* บังคับ Grid 2 คอลัมน์เท่ากัน ปุ่มโทรจะไม่ใหญ่เกินไป */
+            .grid-user-actions, .grid-admin-actions { grid-template-columns: 1fr 1fr !important; }
+            .btn-act, .user-checkbox-btn { width: 100%; box-sizing: border-box; }
         }
-        .login-box { 
-            background: white; padding: 30px 40px; border-radius: 15px; 
-            width: 320px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
-        }
-        .login-input { 
-            width: 100%; padding: 12px; margin-bottom: 15px; 
-            border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; 
-            font-family: 'Sarabun'; background: #f9f9f9;
-        }
-        .login-options { 
-            display: flex; justify-content: space-between; align-items: center; 
-            font-size: 13px; color: #666; margin-bottom: 15px; 
-        }
-        .user-profile-badge {
-            font-size: 11px; background: #eef3ff; color: var(--primary); 
-            padding: 3px 8px; border-radius: 15px; margin-left: 8px; 
-            cursor: pointer; border: 1px solid #dce6ff; display: inline-flex; align-items: center; gap: 4px;
-        }
-        /* Class สำหรับซ่อน Element ชั่วคราว */
+
+        /* Login */
+        .login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(43, 45, 66, 0.98); z-index: 9000; display: flex; align-items: center; justify-content: center; }
+        .login-box { background: white; padding: 30px 25px; border-radius: 15px; width: 85%; max-width: 320px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .user-profile-badge { font-size: 11px; background: #eef3ff; color: var(--primary); padding: 3px 8px; border-radius: 15px; margin-left: 8px; cursor: pointer; border: 1px solid #dce6ff; display: inline-flex; align-items: center; gap: 4px; }
         .hidden-elm { display: none !important; }
     </style>
 </head>
@@ -134,9 +117,9 @@
     <div id="loginOverlay" class="login-overlay">
         <div class="login-box">
             <h2 style="color:var(--dark); margin-bottom:20px;">เข้าสู่ระบบ</h2>
-            <input type="text" id="loginUser" class="login-input" placeholder="ชื่อผู้ใช้งาน">
-            <input type="password" id="loginPass" class="login-input" placeholder="รหัสผ่าน" onkeyup="if(event.key==='Enter') doLogin()">
-            <div class="login-options">
+            <input type="text" id="loginUser" class="login-input" style="width:100%; padding:12px; margin-bottom:15px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box;" placeholder="ชื่อผู้ใช้งาน">
+            <input type="password" id="loginPass" class="login-input" style="width:100%; padding:12px; margin-bottom:15px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box;" placeholder="รหัสผ่าน" onkeyup="if(event.key==='Enter') doLogin()">
+            <div style="display:flex; justify-content:space-between; font-size:13px; color:#666; margin-bottom:15px;">
                 <label style="cursor:pointer;"><input type="checkbox" id="rememberMe"> จดจำฉัน</label>
                 <span style="color:var(--primary); cursor:pointer;" onclick="forgotPass()">ลืมรหัสผ่าน?</span>
             </div>
@@ -155,11 +138,9 @@
             <button class="btn-icon btn-refresh" onclick="loadData()"><i class="fas fa-sync-alt"></i></button>
             <button class="btn-pill btn-daily" onclick="showSummary('daily')"><i class="fas fa-bolt"></i> สรุปวัน</button>
             <button class="btn-pill btn-monthly" onclick="showSummary('monthly')"><i class="fas fa-calendar-check"></i> สรุปเดือน</button>
-            
             <button id="btnPrint" class="btn-icon btn-print" onclick="printReport()"><i class="fas fa-print"></i></button>
             <button id="btnExcel" class="btn-icon btn-excel" onclick="exportToExcel()"><i class="fas fa-file-excel"></i></button>
             <button id="btnReset" class="btn-icon btn-reset" onclick="resetHidden()"><i class="fas fa-eye"></i></button>
-            
             <button id="btnAdmin" class="btn-icon" style="background:#2c3e50; display:none;" onclick="manageUsers()" title="จัดการผู้ใช้"><i class="fas fa-users-cog"></i></button>
         </div>
     </div>
@@ -189,23 +170,17 @@
     </div>
 
     <script>
-        // 🔴🔴 วางลิงก์ Script ของคุณตรงนี้ 🔴🔴
-        const API_URL = 'https://script.google.com/macros/s/AKfycbyD7hx5Di4a4X3_AIN0c0j_NlewKFx-emw2Hqr_ZS42GAzkQgKmASJFxx41_KymlSfW/exec'; 
+        // 🔴🔴 แก้ไขลิงก์ตรงนี้ให้ถูกต้อง 🔴🔴
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxDMvreshnIijn3vAg5ERXWOVD7amaW8mZy94azIcriQiQOqaAixnTuMfVEw0QZlj18/exec'; 
         
         let currentUser = null;
         
-        // --- 1. Auto Login ---
         window.onload = function() {
             const saved = localStorage.getItem('kamky_user');
-            if (saved) {
-                currentUser = JSON.parse(saved);
-                initApp();
-            } else {
-                document.getElementById('filterDate').valueAsDate = new Date();
-            }
+            if (saved) { currentUser = JSON.parse(saved); initApp(); } 
+            else { document.getElementById('filterDate').valueAsDate = new Date(); }
         };
 
-        // --- 2. Login System ---
         async function doLogin() {
             const u = document.getElementById('loginUser').value.trim();
             const p = document.getElementById('loginPass').value.trim();
@@ -213,137 +188,63 @@
             const msg = document.getElementById('loginMsg');
             
             if(!u || !p) { msg.innerText = 'กรุณากรอกข้อมูล'; return; }
-            msg.innerText = 'กำลังตรวจสอบ...';
+            msg.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังตรวจสอบ...';
+            msg.style.color = 'var(--primary)';
             
             try {
-                const res = await fetch(API_URL, { method:'POST', body:JSON.stringify({action:'login', username:u, password:p}) });
+                const res = await fetch(API_URL, { 
+                    method: 'POST', redirect: 'follow', headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({action:'login', username:u, password:p}) 
+                });
+                
+                if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
                 const d = await res.json();
+                
                 if(d.status === 'success') {
                     currentUser = d.user;
                     if(rem) localStorage.setItem('kamky_user', JSON.stringify(currentUser));
-                    initApp();
+                    Swal.fire({ icon: 'success', title: 'ยินดีต้อนรับ', text: `สวัสดีคุณ ${currentUser.name}`, timer: 1000, showConfirmButton: false }).then(() => initApp());
                 } else {
-                    msg.innerText = d.message;
+                    msg.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${d.message || 'รหัสผ่านไม่ถูกต้อง'}`;
+                    msg.style.color = 'red';
                 }
-            } catch(e) { msg.innerText = 'เชื่อมต่อ Server ไม่ได้'; }
+            } catch(e) { 
+                console.error(e);
+                msg.innerText = ''; 
+                Swal.fire({ icon: 'error', title: 'เชื่อมต่อล้มเหลว', text: 'กรุณาตรวจสอบลิงก์ API หรือสิทธิ์การเข้าถึง (Deploy as Anyone)', footer: `<small style="color:red">${e.message}</small>` });
+            }
         }
 
         function initApp() {
             document.getElementById('loginOverlay').style.display = 'none';
-            // เพิ่มป้ายชื่อ User ไปข้างๆ ชื่อระบบ
             document.getElementById('appTitle').innerHTML += ` <span class="user-profile-badge" onclick="userProfile()"><i class="fas fa-user"></i> ${currentUser.name}</span>`;
-            
             if(!document.getElementById('filterDate').value) document.getElementById('filterDate').valueAsDate = new Date();
-
-            // *** จัดการสิทธิ์ (ซ่อนปุ่มเดิม) ***
             const isUser = currentUser.role !== 'admin';
-            if (isUser) {
-                document.getElementById('btnPrint').style.display = 'none';
-                document.getElementById('btnExcel').style.display = 'none';
-                document.getElementById('btnReset').style.display = 'none';
-            } else {
-                // Admin: แสดงปุ่มจัดการ User
-                document.getElementById('btnAdmin').style.display = 'flex';
-            }
-            
+            if (isUser) { document.getElementById('btnPrint').style.display = 'none'; document.getElementById('btnExcel').style.display = 'none'; document.getElementById('btnReset').style.display = 'none'; } 
+            else { document.getElementById('btnAdmin').style.display = 'flex'; }
             loadData();
         }
 
-        // --- 3. Profile & Forgot Pass ---
-        function userProfile() {
-            Swal.fire({
-                title: 'ข้อมูลผู้ใช้', html: `<b>${currentUser.name}</b><br>สถานะ: ${currentUser.role}`,
-                showDenyButton: true, confirmButtonText: 'เปลี่ยนรหัสผ่าน', denyButtonText: 'ออกจากระบบ', denyButtonColor: '#d33'
-            }).then(r => {
-                if(r.isConfirmed) changePass();
-                else if(r.isDenied) { localStorage.removeItem('kamky_user'); location.reload(); }
-            });
-        }
+        function userProfile() { Swal.fire({ title: 'ข้อมูลผู้ใช้', html: `<b>${currentUser.name}</b><br>สถานะ: ${currentUser.role}`, showDenyButton: true, confirmButtonText: 'เปลี่ยนรหัสผ่าน', denyButtonText: 'ออกจากระบบ', denyButtonColor: '#d33' }).then(r => { if(r.isConfirmed) changePass(); else if(r.isDenied) { localStorage.removeItem('kamky_user'); location.reload(); } }); }
+        async function changePass() { const { value: p } = await Swal.fire({ title: 'ตั้งรหัสใหม่', input: 'password' }); if(p) { await fetch(API_URL, { method:'POST', body:JSON.stringify({action:'change_password', username:currentUser.username, new_pass:p}) }); Swal.fire('สำเร็จ'); } }
+        async function forgotPass() { const steps = ['Username', 'เบอร์โทรศัพท์']; const inputs = []; for(let s of steps) { const {value:v} = await Swal.fire({title:'ลืมรหัสผ่าน', text:'ระบุ '+s, input:'text', showCancelButton:true, zIndex:10000}); if(!v) return; inputs.push(v); } const {value:nP} = await Swal.fire({title:'รหัสใหม่', input:'password', zIndex:10000}); if(nP) { Swal.fire({title:'บันทึก...', didOpen:()=>Swal.showLoading(), zIndex:10000}); const res = await fetch(API_URL, { method:'POST', body:JSON.stringify({action:'reset_password_via_phone', username:inputs[0], phone:inputs[1], new_pass:nP}) }); const d = await res.json(); Swal.fire({ title: d.status==='success'?'สำเร็จ':'ไม่สำเร็จ', text: d.message||'', icon: d.status==='success'?'success':'error', zIndex:10000 }); } }
 
-        async function changePass() {
-            const { value: p } = await Swal.fire({ title: 'ตั้งรหัสใหม่', input: 'password' });
-            if(p) { await fetch(API_URL, { method:'POST', body:JSON.stringify({action:'change_password', username:currentUser.username, new_pass:p}) }); Swal.fire('สำเร็จ'); }
-        }
-
-        async function forgotPass() {
-            const steps = ['Username', 'เบอร์โทรศัพท์']; const inputs = [];
-            for(let s of steps) {
-                const {value:v} = await Swal.fire({title:'ลืมรหัสผ่าน', text:'ระบุ '+s, input:'text', showCancelButton:true, zIndex:10000});
-                if(!v) return; inputs.push(v);
-            }
-            const {value:nP} = await Swal.fire({title:'รหัสใหม่', input:'password', zIndex:10000});
-            if(nP) {
-                Swal.fire({title:'บันทึก...', didOpen:()=>Swal.showLoading(), zIndex:10000});
-                const res = await fetch(API_URL, { method:'POST', body:JSON.stringify({action:'reset_password_via_phone', username:inputs[0], phone:inputs[1], new_pass:nP}) });
-                const d = await res.json();
-                Swal.fire({ title: d.status==='success'?'สำเร็จ':'ไม่สำเร็จ', text: d.message||'', icon: d.status==='success'?'success':'error', zIndex:10000 });
-            }
-        }
-
-        // --- 4. Admin Manage Users (แก้ไขให้กำหนดสิทธิ์ได้) ---
         async function manageUsers() {
             Swal.fire({ title:'Loading...', didOpen:()=>Swal.showLoading() });
-            const r = await fetch(API_URL, { method:'POST', body:JSON.stringify({action:'get_users'}) });
-            const d = await r.json();
-            
+            const r = await fetch(API_URL, { method:'POST', body:JSON.stringify({action:'get_users'}) }); const d = await r.json();
             let h = `<div style="text-align:right; margin-bottom:10px;"><button onclick="addUser()" style="background:#28a745; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">+ เพิ่ม</button></div>`;
-            h += `<table style="width:100%; text-align:left; font-size:13px; border-collapse:collapse;">
-                  <tr style="background:#eee;"><th style="padding:5px;">User</th><th style="padding:5px;">Role</th><th style="padding:5px;">Edit</th></tr>`;
-            
-            d.users.forEach(u => {
-                let color = u.role === 'admin' ? 'red' : 'green';
-                h += `<tr style="border-bottom:1px solid #ddd;">
-                      <td style="padding:5px;">${u.username}</td>
-                      <td style="padding:5px; color:${color}; font-weight:bold;">${u.role}</td>
-                      <td style="padding:5px;"><button onclick="editRole('${u.username}', '${u.role}')" style="cursor:pointer; font-size:12px;">⚙️</button></td>
-                      </tr>`;
-            });
-            h += `</table>`;
+            h += `<div style="overflow-x:auto;"><table style="width:100%; text-align:left; font-size:13px; border-collapse:collapse; white-space:nowrap;"><tr style="background:#eee;"><th style="padding:5px;">User</th><th style="padding:5px;">Role</th><th style="padding:5px;">Edit</th></tr>`;
+            d.users.forEach(u => { let color = u.role === 'admin' ? 'red' : 'green'; h += `<tr style="border-bottom:1px solid #ddd;"><td style="padding:5px;">${u.username}</td><td style="padding:5px; color:${color}; font-weight:bold;">${u.role}</td><td style="padding:5px;"><button onclick="editRole('${u.username}', '${u.role}')" style="cursor:pointer; font-size:12px;">⚙️</button></td></tr>`; });
+            h += `</table></div>`;
             Swal.fire({ title:'จัดการผู้ใช้งาน', html:h, width:500, showConfirmButton:false, showCloseButton:true });
         }
+        async function editRole(user, currentRole) { const { value: newRole } = await Swal.fire({ title: `แก้ไขสิทธิ์: ${user}`, input: 'select', inputOptions: { 'user': 'User', 'admin': 'Admin' }, inputValue: currentRole, showCancelButton: true }); if (newRole) { Swal.showLoading(); await fetch(API_URL, { method:'POST', body:JSON.stringify({action:'update_user', target_username:user, role:newRole}) }); Swal.fire('เรียบร้อย').then(()=>manageUsers()); } }
+        async function addUser() { const { value: v } = await Swal.fire({ html: '<input id="u" placeholder="User" class="swal2-input"><input id="p" placeholder="Pass" class="swal2-input"><input id="n" placeholder="Name" class="swal2-input"><input id="t" placeholder="Tel" class="swal2-input">', preConfirm: () => [document.getElementById('u').value, document.getElementById('p').value, document.getElementById('n').value, document.getElementById('t').value] }); if(v) { await fetch(API_URL, { method:'POST', body:JSON.stringify({action:'add_user', username:v[0], password:v[1], name:v[2], role:'user', position:'Staff', tel:v[3]}) }); Swal.fire('สำเร็จ').then(()=>manageUsers()); } }
 
-        async function editRole(user, currentRole) {
-            const { value: newRole } = await Swal.fire({
-                title: `แก้ไขสิทธิ์: ${user}`,
-                input: 'select',
-                inputOptions: { 'user': 'User', 'admin': 'Admin' },
-                inputValue: currentRole,
-                showCancelButton: true
-            });
-            if (newRole) {
-                Swal.showLoading();
-                await fetch(API_URL, { method:'POST', body:JSON.stringify({action:'update_user', target_username:user, role:newRole}) });
-                Swal.fire('เรียบร้อย').then(()=>manageUsers());
-            }
-        }
-
-        async function addUser() {
-            const { value: v } = await Swal.fire({ 
-                html: '<input id="u" placeholder="User" class="swal2-input"><input id="p" placeholder="Pass" class="swal2-input"><input id="n" placeholder="Name" class="swal2-input"><input id="t" placeholder="Tel" class="swal2-input">',
-                preConfirm: () => [document.getElementById('u').value, document.getElementById('p').value, document.getElementById('n').value, document.getElementById('t').value]
-            });
-            if(v) {
-                await fetch(API_URL, { method:'POST', body:JSON.stringify({action:'add_user', username:v[0], password:v[1], name:v[2], role:'user', position:'Staff', tel:v[3]}) });
-                Swal.fire('สำเร็จ').then(()=>manageUsers());
-            }
-        }
-
-        // --- 5. Original App Logic (V.16) - คงเดิม 100% ---
         let currentTrackingData = [], filteredData = [], globalSummary = {};
         let dailyChartInstance = null, monthlyChartInstance = null;
-
-        function formatDateToThai(dateString) {
-            if(!dateString) return "";
-            const p = dateString.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; 
-        }
-
-        function formatDateToThaiShort(dateString) {
-            if(!dateString) return "";
-            const [y, m, d] = dateString.split('-');
-            const thMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-            return `${parseInt(d)} ${thMonths[parseInt(m)-1]} ${(parseInt(y)+543).toString().slice(-2)}`;
-        }
-
+        function formatDateToThai(dateString) { if(!dateString) return ""; const p = dateString.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }
+        
         async function loadData() {
             const date = document.getElementById('filterDate').value;
             const container = document.getElementById('contractList');
@@ -351,21 +252,17 @@
             try {
                 const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'get_tracking', date: date }) });
                 const data = await response.json();
-                currentTrackingData = data.contracts || []; 
-                globalSummary = data.summary || {};
+                currentTrackingData = data.contracts || []; globalSummary = data.summary || {};
                 renderDashboard(data, date);
             } catch (e) { container.innerHTML = '<div class="loading-state" style="color:var(--danger)">เกิดข้อผิดพลาดในการเชื่อมต่อ</div>'; }
         }
 
         function renderDashboard(data, selectedDate) {
-            const container = document.getElementById('contractList');
-            container.innerHTML = "";
+            const container = document.getElementById('contractList'); container.innerHTML = "";
             const hidden = JSON.parse(localStorage.getItem('hiddenContracts') || '[]').map(String);
             const selectedDateThai = formatDateToThai(selectedDate);
-            const isAdmin = currentUser.role === 'admin'; // เช็คสิทธิ์ Admin ตรงนี้
-            
-            filteredData = [];
-            let pendingToday = 0;
+            const isAdmin = currentUser.role === 'admin';
+            filteredData = []; let pendingToday = 0;
 
             if (data.contracts) {
                 data.contracts.forEach(c => {
@@ -380,118 +277,103 @@
                 });
             }
 
-            const colToday = data.summary.total_collected_today || 0;
-            const targetToday = colToday + pendingToday;
+            const colToday = data.summary.total_collected_today || 0; const targetToday = colToday + pendingToday;
             updateChart('dailyChart', 'daily', colToday, pendingToday);
             document.getElementById('txtTodayCollected').innerText = colToday.toLocaleString();
             document.getElementById('txtTodayPending').innerText = pendingToday.toLocaleString();
             document.getElementById('txtTodayPercent').innerText = `${Math.round(targetToday > 0 ? (colToday/targetToday)*100 : 0)}%`;
-
-            const colMonth = data.summary.total_collected_month || 0;
-            const targetMonth = data.summary.expected_month || data.summary.total_expected_month || 0;
+            const colMonth = data.summary.total_collected_month || 0; const targetMonth = data.summary.expected_month || data.summary.total_expected_month || 0;
             updateChart('monthlyChart', 'monthly', colMonth, Math.max(0, targetMonth - colMonth));
             document.getElementById('txtMonthCollected').innerText = colMonth.toLocaleString();
             document.getElementById('txtMonthTarget').innerText = targetMonth.toLocaleString();
 
-            if (filteredData.length === 0) {
-                container.innerHTML = '<div class="loading-state"><i class="fas fa-check-circle" style="color:var(--success)"></i><br>ไม่มีรายการต้องติดตาม</div>';
-                return;
-            }
+            if (filteredData.length === 0) { container.innerHTML = '<div class="loading-state"><i class="fas fa-check-circle" style="color:var(--success)"></i><br>ไม่มีรายการต้องติดตาม</div>'; return; }
 
             filteredData.forEach(c => {
-                let cardClass = "card-normal";
-                let statusHtml = `<span class="status-text text-green"><i class="fas fa-check-circle"></i> ปกติ</span>`;
+                let cardClass = "card-normal"; let statusHtml = `<span class="status-text text-green"><i class="fas fa-check-circle"></i> ปกติ</span>`;
+                if (c.status === 'Pending_Approve' || c.status === 'รอตรวจสอบ') { cardClass = "card-pending-approve"; statusHtml = `<span class="status-text text-orange"><i class="fas fa-clock"></i> รอตรวจสอบ</span>`; } 
+                else if (c.hasPostpone) { cardClass = "card-postpone"; statusHtml = `<span class="status-text text-purple"><i class="fas fa-clock"></i> เลื่อน: ${c.postpone_date}</span>`; } 
+                else if (c.overdue_count > 0) { cardClass = "card-overdue"; statusHtml = `<span class="status-text text-red"><i class="fas fa-exclamation-circle"></i> ค้าง ${c.overdue_count} งวด</span>`; }
+
+                let menuButton = ''; if (isAdmin) menuButton = `<button class="btn-kebab" style="margin-left:5px;" onclick="openManageMenu(${c.row_index},'${c.b_name}','${c.c_no}')"><i class="fas fa-ellipsis-v"></i></button>`;
                 
-                if (c.hasPostpone) {
-                    cardClass = "card-postpone";
-                    statusHtml = `<span class="status-text text-purple"><i class="fas fa-clock"></i> เลื่อน: ${c.postpone_date}</span>`;
-                } else if (c.overdue_count > 0) {
-                    cardClass = "card-overdue";
-                    statusHtml = `<span class="status-text text-red"><i class="fas fa-exclamation-circle"></i> ค้าง ${c.overdue_count} งวด</span>`;
-                }
-
-                // Check Role for Kebab Menu (Admin Only)
-                let menuButton = '';
+                let actionButtonsHtml = ''; let gridClass = '';
                 if (isAdmin) {
-                    menuButton = `<button class="btn-kebab" style="margin-left:5px;" onclick="openManageMenu(${c.row_index},'${c.b_name}','${c.c_no}')"><i class="fas fa-ellipsis-v"></i></button>`;
-                }
-
-                // *** ส่วนจัดการปุ่ม Action ตามสิทธิ์ ***
-                // Default User: 1 button (Call), 1 Column
-                let actionButtonsHtml = `<a href="tel:${c.b_mobile}" class="btn-act btn-act-call"><i class="fas fa-phone"></i> โทร</a>`;
-                let gridStyle = 'style="grid-template-columns: 1fr;"';
-
-                if (isAdmin) {
-                    // Admin: 3 buttons, Default Grid (3 cols defined in CSS)
-                    actionButtonsHtml += `
-                        <button class="btn-act btn-act-postpone" onclick="openPostpone(${c.row_index},'${c.b_name}','${c.postpone_date||''}')"><i class="fas fa-clock"></i> นัดหมาย</button>
+                    gridClass = 'grid-admin-actions';
+                    actionButtonsHtml = `
+                        <a href="tel:${c.b_mobile}" class="btn-act btn-act-call"><i class="fas fa-phone"></i> โทร</a>
+                        <button class="btn-act btn-act-postpone" onclick="openPostpone(${c.row_index},'${c.b_name}','${c.postpone_date||''}')"><i class="fas fa-clock"></i> นัด</button>
                         <button class="btn-act btn-act-pay" onclick="openPay('${c.c_no}')"><i class="fas fa-wallet"></i> จ่าย</button>
+                        <button class="btn-act btn-act-contract" onclick="openContractPopup('${c.c_no}')"><i class="fas fa-file-contract"></i> สัญญา</button>
                     `;
-                    gridStyle = ''; // Remove inline style to use CSS class default
+                } else {
+                    gridClass = 'grid-user-actions';
+                    // 🟢 ปุ่มโทรขนาดเท่ากับปุ่มอื่น
+                    actionButtonsHtml = `
+                        <a href="tel:${c.b_mobile}" class="btn-act btn-act-call"><i class="fas fa-phone"></i> โทร</a>
+                        <button class="btn-act btn-act-contract" onclick="openContractPopup('${c.c_no}')"><i class="fas fa-file-contract"></i> สัญญา</button>
+                        <button class="user-checkbox-btn" onclick="userReqPay('${c.c_no}')"><i class="far fa-square"></i> ชำระแล้ว</button>
+                        <button class="user-checkbox-btn" onclick="userReqPostpone('${c.c_no}')"><i class="far fa-square"></i> เลื่อนนัด</button>
+                        <button class="user-checkbox-btn" style="grid-column: span 2;" onclick="userAddNote('${c.c_no}')"><i class="fas fa-pen"></i> หมายเหตุ</button>
+                    `;
                 }
+
+                let desktopGridStyle = isAdmin ? 'grid-template-columns: 1fr 1fr 1fr 1fr;' : 'grid-template-columns: 1fr 1fr;';
 
                 container.innerHTML += `
                 <div class="cust-card ${cardClass}">
                     <div class="cust-header">
-                        <div class="cust-info">
-                            <h3>${c.b_name}</h3>
-                            <span class="cust-id">#${c.c_no}</span>
-                        </div>
-                        <div style="text-align:right">
-                            ${statusHtml}
-                        </div>
-                        ${menuButton}
+                        <div class="cust-info"><h3>${c.b_name}</h3><span class="cust-id">#${c.c_no}</span></div>
+                        <div class="status-badge">${statusHtml}</div>${menuButton}
                     </div>
-                    
                     <div class="cust-body">
-                        <div>
-                            <div class="contact-line"><i class="fas fa-phone-alt fa-fw"></i> ${c.b_mobile || '-'}</div>
-                            <div class="contact-line"><i class="fas fa-list-ol fa-fw"></i> งวดที่ ${c.installment_no}</div>
-                        </div>
-                        <div style="text-align:right">
-                            <span style="font-size:10px; color:#777; display:block;">ยอดชำระ</span>
-                            <span class="amount-val">฿${c.finalAmount.toLocaleString()}</span>
-                        </div>
+                        <div><div class="contact-line"><i class="fas fa-phone-alt fa-fw"></i> ${c.b_mobile || '-'}</div><div class="contact-line"><i class="fas fa-list-ol fa-fw"></i> งวดที่ ${c.installment_no}</div></div>
+                        <div style="text-align:right"><span style="font-size:10px; color:#777; display:block;">ยอดชำระ</span><span class="amount-val">฿${c.finalAmount.toLocaleString()}</span></div>
                     </div>
-
-                    <div class="cust-actions" ${gridStyle}>
-                        ${actionButtonsHtml}
-                    </div>
+                    <div class="cust-actions ${gridClass}" style="${desktopGridStyle}">${actionButtonsHtml}</div>
                 </div>`;
             });
         }
 
-        function updateChart(id, type, val1, val2) {
-            const ctx = document.getElementById(id).getContext('2d');
-            let colors = type === 'daily' ? ['#2ec4b6', '#edf2f4'] : ['#4361ee', '#edf2f4'];
-            if (val2 > 0) colors = type === 'daily' ? ['#2ec4b6', '#e71d36'] : ['#4361ee', '#edf2f4'];
-            if(val2 <= 0 && val1 > 0) colors = type === 'daily' ? ['#2ec4b6', '#2ec4b6'] : ['#4361ee', '#4361ee'];
-            let config = {
-                type: 'doughnut', data: { labels: ['Done', 'Left'], datasets: [{ data: [val1, val2], backgroundColor: colors, borderWidth: 0 }] },
-                options: { responsive: true, maintainAspectRatio: false, cutout: '85%', plugins: { legend: { display: false } } }
-            };
-            if(type==='daily'){ if(dailyChartInstance) dailyChartInstance.destroy(); dailyChartInstance=new Chart(ctx, config); }
-            else{ if(monthlyChartInstance) monthlyChartInstance.destroy(); monthlyChartInstance=new Chart(ctx, config); }
+        async function openContractPopup(cNo) {
+            Swal.fire({ title: 'กำลังค้นหาสัญญา...', html: 'กรุณารอสักครู่ ระบบกำลังดึงไฟล์ภาพ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+            try {
+                const res = await fetch(API_URL, { method: 'POST', redirect: 'follow', headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: 'get_contract_image', c_no: cNo }) });
+                if (!res.ok) throw new Error('Network error'); const data = await res.json();
+                if (data.status === 'success') {
+                    Swal.fire({ title: `สัญญาเลขที่ ${cNo}`, imageUrl: data.url, imageAlt: 'Contract Image', width: '95%', padding: '10px', showCloseButton: true, confirmButtonText: 'ปิด' });
+                } else { Swal.fire({ icon: 'warning', title: 'ไม่พบไฟล์', text: 'ไม่พบไฟล์ภาพใน Drive (ตรวจสอบชื่อไฟล์ให้ตรงกับเลขสัญญา)' }); }
+            } catch (e) { Swal.fire({ icon: 'error', title: 'Error', text: 'Connection failed: ' + e.message }); }
         }
+
+        async function userReqPay(cNo) {
+            const { value: formValues } = await Swal.fire({ title: 'แจ้งชำระเงิน', html: `<p style="font-size:13px; color:#666;">ส่งเรื่องให้ Admin ตรวจสอบ</p><label><input type="checkbox" id="swal-pay-check" checked> ยืนยันรับเงินแล้ว</label><input id="swal-pay-note" class="swal2-input" placeholder="หมายเหตุ (เช่น โอน)">`, focusConfirm: false, showCancelButton: true, confirmButtonText: 'ส่งเรื่อง', preConfirm: () => [document.getElementById('swal-pay-check').checked, document.getElementById('swal-pay-note').value] });
+            if (formValues && formValues[0]) sendUserRequest('request_pay', cNo, { note: formValues[1] });
+        }
+        async function userReqPostpone(cNo) { const { value: date } = await Swal.fire({ title: 'แจ้งเลื่อนนัด', input: 'date', showCancelButton: true, confirmButtonText: 'ถัดไป' }); if (date) { const { value: note } = await Swal.fire({ input: 'text', title: 'เหตุผล', placeholder: 'ระบุเหตุผล...', showCancelButton: true }); if(note !== undefined) sendUserRequest('request_postpone', cNo, { new_date: date, note: note }); } }
+        async function userAddNote(cNo) { const { value: text } = await Swal.fire({ input: 'textarea', title: 'บันทึกหมายเหตุ', placeholder: 'รายละเอียด...', showCancelButton: true }); if (text) sendUserRequest('add_daily_note', cNo, { note: text }); }
+        async function sendUserRequest(actionType, cNo, payload) {
+            Swal.fire({ title: 'ส่งข้อมูล...', didOpen: () => Swal.showLoading() }); try { await fetch(API_URL, { method: 'POST', redirect: 'follow', headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: 'user_action_log', sub_action: actionType, c_no: cNo, user: currentUser.username, ...payload }) }); Swal.fire({ icon: 'success', title: 'ส่งเรื่องแล้ว', timer: 1000, showConfirmButton: false });
+            const cards = document.querySelectorAll('.cust-id'); cards.forEach(el => { if(el.innerText.includes(cNo)) { const card = el.closest('.cust-card'); card.className = 'cust-card card-pending-approve'; card.querySelector('.status-text').innerHTML = '<i class="fas fa-clock"></i> รอตรวจสอบ'; } });
+            } catch (e) { Swal.fire('Error', 'ผิดพลาด', 'error'); }
+        }
+
+        function updateChart(id, type, val1, val2) { const ctx = document.getElementById(id).getContext('2d'); let colors = type === 'daily' ? ['#2ec4b6', '#edf2f4'] : ['#4361ee', '#edf2f4']; if (val2 > 0) colors = type === 'daily' ? ['#2ec4b6', '#e71d36'] : ['#4361ee', '#edf2f4']; if(val2 <= 0 && val1 > 0) colors = type === 'daily' ? ['#2ec4b6', '#2ec4b6'] : ['#4361ee', '#4361ee']; let config = { type: 'doughnut', data: { labels: ['Done', 'Left'], datasets: [{ data: [val1, val2], backgroundColor: colors, borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '85%', plugins: { legend: { display: false } } } }; if(type==='daily'){ if(dailyChartInstance) dailyChartInstance.destroy(); dailyChartInstance=new Chart(ctx, config); } else{ if(monthlyChartInstance) monthlyChartInstance.destroy(); monthlyChartInstance=new Chart(ctx, config); } }
 
         function showSummary(type) {
             let col = type === 'daily' ? (globalSummary.total_collected_today || 0) : (globalSummary.total_collected_month || 0);
             let target = type === 'daily' ? (col + filteredData.reduce((a,b)=>a+b.finalAmount,0)) : (globalSummary.expected_month || globalSummary.total_expected_month || 0);
             let percent = target > 0 ? (col/target*100).toFixed(1) : 0;
-            Swal.fire({
-                title: type === 'daily' ? '📊 สรุปยอดรายวัน' : '📅 สรุปยอดรายเดือน',
-                html: `<div style="text-align:center;">เก็บได้: <b style="color:green">${col.toLocaleString()}</b> / เป้า: <b>${target.toLocaleString()}</b><br>สำเร็จ: <b style="color:blue; font-size:1.2em">${percent}%</b></div>`,
-                showCancelButton: true, confirmButtonText: '🖨️ เปิดรายงาน', cancelButtonText: 'ปิด'
-            }).then(r => { if(r.isConfirmed) printSummaryReport(type, col, target, percent); });
+            Swal.fire({ title: type === 'daily' ? '📊 สรุปยอดรายวัน' : '📅 สรุปยอดรายเดือน', html: `<div style="text-align:center;">เก็บได้: <b style="color:green">${col.toLocaleString()}</b> / เป้า: <b>${target.toLocaleString()}</b><br>สำเร็จ: <b style="color:blue; font-size:1.2em">${percent}%</b></div>`, showCancelButton: true, confirmButtonText: '🖨️ เปิดรายงาน', cancelButtonText: 'ปิด' }).then(r => { if(r.isConfirmed) printSummaryReport(type, col, target, percent); });
         }
 
+        // 🟢 ฟังก์ชันรายงานต้นฉบับ (แก้ไขให้ข้อมูลตรงและแยกประเภทถูกต้อง)
         function printSummaryReport(type, col, target, percent) {
             const canvas = document.getElementById(type === 'daily' ? 'dailyChart' : 'monthlyChart');
             const chartImg = canvas.toDataURL("image/png");
-            
             const rawDate = document.getElementById('filterDate').value;
             const dateStr = formatDateToThai(rawDate);
-            const fileName = `Report_${rawDate.replace(/-/g, '_')}`; // Report_2026_01_21
+            const fileName = `Report_${rawDate.replace(/-/g, '_')}`;
 
             let detailsHtml = '';
             let collectedList = [], pendingList = [], postponedList = [];
@@ -510,37 +392,37 @@
             if (type === 'daily') {
                 detailsHtml += `<h3 style="color:#27ae60; border-bottom: 2px solid #27ae60; padding-bottom:5px; margin-top:20px;">✅ รายการเก็บได้ (Collected)</h3>`;
                 if (collectedList.length > 0) {
-                    detailsHtml += `<table class="table"><thead><tr style="background:#e8f8f5; color:#1e8449;"><th>สัญญา</th><th>ชื่อลูกค้า</th><th align="center">งวดที่</th><th align="right">ยอดชำระ</th></tr></thead><tbody>`;
+                    detailsHtml += `<table style="width:100%; border-collapse:collapse; font-size:14px; margin-bottom:20px;"><thead><tr style="background:#e8f8f5; color:#1e8449;"><th style="border:1px solid #ddd; padding:5px;">สัญญา</th><th style="border:1px solid #ddd; padding:5px;">ชื่อลูกค้า</th><th style="border:1px solid #ddd; padding:5px;" align="center">งวดที่</th><th style="border:1px solid #ddd; padding:5px;" align="right">ยอดชำระ</th></tr></thead><tbody>`;
                     let sumCollected = 0;
                     collectedList.forEach(item => { 
                         let payAmt = item.amount_paid ? parseFloat(item.amount_paid) : parseFloat(item.amount);
                         sumCollected += payAmt;
-                        detailsHtml += `<tr><td>${item.c_no}</td><td>${item.b_name}</td><td align="center">${item.installment_no}</td><td align="right">${payAmt.toLocaleString()}</td></tr>`; 
+                        detailsHtml += `<tr><td style="border:1px solid #ddd; padding:5px;">${item.c_no}</td><td style="border:1px solid #ddd; padding:5px;">${item.b_name}</td><td style="border:1px solid #ddd; padding:5px;" align="center">${item.installment_no}</td><td style="border:1px solid #ddd; padding:5px;" align="right">${payAmt.toLocaleString()}</td></tr>`; 
                     });
-                    detailsHtml += `<tr style="font-weight:bold; background:#f2f2f2;"><td colspan="3" align="right">รวมยอดเก็บได้</td><td align="right">${sumCollected.toLocaleString()}</td></tr></tbody></table>`;
+                    detailsHtml += `<tr style="font-weight:bold; background:#f2f2f2;"><td colspan="3" align="right" style="border:1px solid #ddd; padding:5px;">รวมยอดเก็บได้</td><td align="right" style="border:1px solid #ddd; padding:5px;">${sumCollected.toLocaleString()}</td></tr></tbody></table>`;
                 } else {
                     detailsHtml += `<p style="color:#999; font-style:italic; padding-left:10px;">- ไม่พบรายการที่มีการบันทึกสถานะ 'Close' ในวันนี้ -</p>`;
                 }
 
                 detailsHtml += `<h3 style="color:#c0392b; border-bottom: 2px solid #c0392b; padding-bottom:5px; margin-top:30px;">⏳ รายการค้างติดตาม (Pending)</h3>`;
                 if (pendingList.length > 0) {
-                    detailsHtml += `<table class="table"><thead><tr style="background:#fdedec; color:#922b21;"><th>สัญญา</th><th>ชื่อลูกค้า</th><th>สถานะ</th><th align="right">ยอดค้าง</th></tr></thead><tbody>`;
+                    detailsHtml += `<table style="width:100%; border-collapse:collapse; font-size:14px; margin-bottom:20px;"><thead><tr style="background:#fdedec; color:#922b21;"><th style="border:1px solid #ddd; padding:5px;">สัญญา</th><th style="border:1px solid #ddd; padding:5px;">ชื่อลูกค้า</th><th style="border:1px solid #ddd; padding:5px;">สถานะ</th><th style="border:1px solid #ddd; padding:5px;" align="right">ยอดค้าง</th></tr></thead><tbody>`;
                     let sumPending = 0;
                     pendingList.forEach(item => { 
                         sumPending += item.finalAmount;
                         let statusTxt = item.hasPostpone ? `เลื่อน (${item.postpone_date})` : (item.overdue_count > 0 ? `ค้าง ${item.overdue_count} งวด` : 'ถึงกำหนด');
-                        detailsHtml += `<tr><td>${item.c_no}</td><td>${item.b_name}</td><td>${statusTxt}</td><td align="right">${item.finalAmount.toLocaleString()}</td></tr>`; 
+                        detailsHtml += `<tr><td style="border:1px solid #ddd; padding:5px;">${item.c_no}</td><td style="border:1px solid #ddd; padding:5px;">${item.b_name}</td><td style="border:1px solid #ddd; padding:5px;">${statusTxt}</td><td style="border:1px solid #ddd; padding:5px;" align="right">${item.finalAmount.toLocaleString()}</td></tr>`; 
                     });
-                    detailsHtml += `<tr style="font-weight:bold; background:#f2f2f2;"><td colspan="3" align="right">รวมยอดคงเหลือ</td><td align="right">${sumPending.toLocaleString()}</td></tr></tbody></table>`;
+                    detailsHtml += `<tr style="font-weight:bold; background:#f2f2f2;"><td colspan="3" align="right" style="border:1px solid #ddd; padding:5px;">รวมยอดคงเหลือ</td><td align="right" style="border:1px solid #ddd; padding:5px;">${sumPending.toLocaleString()}</td></tr></tbody></table>`;
                 } else {
                      detailsHtml += `<p style="color:#999; font-style:italic; padding-left:10px;">- ไม่พบรายการค้างติดตาม -</p>`;
                 }
 
                 if (postponedList.length > 0) {
                     detailsHtml += `<h3 style="color:#8e44ad; border-bottom: 2px solid #8e44ad; padding-bottom:5px; margin-top:30px;">🔜 รายการเลื่อนนัด (Postponed)</h3>`;
-                    detailsHtml += `<table class="table"><thead><tr style="background:#f4ecf7; color:#8e44ad;"><th>สัญญา</th><th>ชื่อลูกค้า</th><th><i class="fas fa-clock"></i> นัดใหม่วันที่</th><th align="right" style="color:#aaa;">ยอดเงิน</th></tr></thead><tbody>`;
+                    detailsHtml += `<table style="width:100%; border-collapse:collapse; font-size:14px; margin-bottom:20px;"><thead><tr style="background:#f4ecf7; color:#8e44ad;"><th style="border:1px solid #ddd; padding:5px;">สัญญา</th><th style="border:1px solid #ddd; padding:5px;">ชื่อลูกค้า</th><th style="border:1px solid #ddd; padding:5px;"><i class="fas fa-clock"></i> นัดใหม่วันที่</th><th style="border:1px solid #ddd; padding:5px;" align="right" style="color:#aaa;">ยอดเงิน</th></tr></thead><tbody>`;
                     postponedList.forEach(item => {
-                        detailsHtml += `<tr><td>${item.c_no}</td><td>${item.b_name}</td><td style="font-weight:bold; color:#8e44ad;">${item.postpone_date}</td><td align="right" style="color:#aaa;">${parseFloat(item.amount).toLocaleString()}</td></tr>`; 
+                        detailsHtml += `<tr><td style="border:1px solid #ddd; padding:5px;">${item.c_no}</td><td style="border:1px solid #ddd; padding:5px;">${item.b_name}</td><td style="border:1px solid #ddd; padding:5px; font-weight:bold; color:#8e44ad;">${item.postpone_date}</td><td style="border:1px solid #ddd; padding:5px;" align="right" style="color:#aaa;">${parseFloat(item.amount).toLocaleString()}</td></tr>`; 
                     });
                     detailsHtml += `</tbody></table>`;
                 }
@@ -552,30 +434,19 @@
                 <head>
                     <title>${fileName}</title>
                     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
-                    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-                    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>
                     <style>
-                        body { font-family: 'Sarabun', sans-serif; padding: 20px; background: #555; display:flex; justify-content:center; margin:0; } 
-                        .container { width: 100%; max-width: 800px; background: white; padding: 30px; box-shadow: 0 0 20px rgba(0,0,0,0.2); box-sizing: border-box; }
-                        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-                        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-                        th { font-weight: 600; }
-                        .btn-group { margin-top: 30px; text-align: center; padding-bottom: 30px; }
-                        button { padding: 12px 25px; margin: 5px; cursor: pointer; border: none; border-radius: 8px; color: white; font-weight: 600; font-family: 'Sarabun'; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition:0.2s; display:inline-flex; align-items:center; gap:5px;}
-                        button:hover { transform: translateY(-2px); }
-                        .btn-pdf { background: #2c3e50; } .btn-img { background: #27ae60; }
-                        
+                        body { font-family: 'Sarabun', sans-serif; padding: 20px; background: #fff; margin:0; } 
+                        .container { width: 100%; max-width: 800px; margin: 0 auto; }
+                        h3 { margin-bottom: 10px; }
+                        table { width: 100%; border-collapse: collapse; }
                         @media print { 
-                            body { background: white; display: block; padding: 0; }
-                            .container { box-shadow: none; max-width: 100%; padding: 0; width:100%; }
                             .btn-group { display: none; } 
-                            h3 { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                            tr { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                            body { -webkit-print-color-adjust: exact; }
                         }
                     </style>
                 </head>
                 <body>
-                    <div id="captureArea" class="container">
+                    <div class="container">
                         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #eee; padding-bottom:15px; margin-bottom:20px;">
                             <div><h1 style="margin:0; font-size:24px; color:#333;">รายงานสรุปผลงาน${type === 'daily' ? 'รายวัน' : 'รายเดือน'}</h1><p style="margin:5px 0 0 0; color:#777;">ประจำวันที่: ${dateStr}</p></div>
                             <div style="text-align:right;"><div style="font-size:12px; color:#999;">พิมพ์เมื่อ: ${new Date().toLocaleString('th-TH')}</div></div>
@@ -589,41 +460,27 @@
                             <div style="flex:0 0 160px; text-align:center;"><img src="${chartImg}" style="max-width:100%; height:auto;" /><div style="font-size:12px; color:#555; margin-top:5px;">ความสำเร็จ ${percent}%</div></div>
                         </div>
                         ${detailsHtml}
+                        <div class="btn-group" style="text-align:center; margin-top:30px;">
+                            <button onclick="window.print()" style="padding:10px 20px; cursor:pointer;">สั่งพิมพ์</button>
+                        </div>
                     </div>
-                    <div class="btn-group">
-                        <button class="btn-pdf" onclick="window.print()"><i class="fas fa-print"></i> พิมพ์ / PDF</button>
-                        <button class="btn-img" onclick="saveImage()"><i class="fas fa-image"></i> บันทึกเป็นรูปภาพ</button>
-                    </div>
-                    <script>
-                        function saveImage() {
-                            const area = document.getElementById('captureArea');
-                            html2canvas(area, { 
-                                scale: 2, 
-                                useCORS: true,
-                                scrollY: -window.scrollY,
-                                windowHeight: area.scrollHeight + 100
-                            }).then(canvas => {
-                                const link = document.createElement('a');
-                                link.download = '${fileName}.jpg';
-                                link.href = canvas.toDataURL('image/jpeg', 0.9);
-                                link.click();
-                            });
-                        }
-                    <\/script>
                 </body></html>
             `);
             win.document.close();
         }
 
-        // --- FULL WORKSHEET REPORT FUNCTION ---
+        // 🟢 ฟังก์ชันใบติดตามหนี้ (Worksheet Fix)
         function printReport() {
-            if (!filteredData.length) return;
+            if (!filteredData || filteredData.length === 0) {
+                Swal.fire({ icon:'warning', title:'ไม่มีข้อมูล', text:'ไม่พบรายการติดตามหนี้สำหรับพิมพ์' });
+                return;
+            }
 
             const rawDate = document.getElementById('filterDate').value;
-            const dateStrShort = formatDateToThaiShort(rawDate); // 1 ม.ค. 69
+            const dateStrShort = formatDateToThai(rawDate);
             const fileName = `Worksheet_${rawDate.replace(/-/g, '_')}`;
 
-            let rows = filteredData.map((x,i) => `<tr><td>${i+1}</td><td>${x.c_no}</td><td>${x.b_name}</td><td>${x.installment_no}</td><td align="right">${x.finalAmount.toLocaleString()}</td><td>${x.hasPostpone?'เลื่อน':(x.overdue_count>0?'ค้าง':'ปกติ')}</td><td></td></tr>`).join('');
+            let rows = filteredData.map((x,i) => `<tr><td align="center">${i+1}</td><td>${x.c_no}</td><td>${x.b_name}</td><td align="center">${x.installment_no}</td><td align="right">${x.finalAmount.toLocaleString()}</td><td align="center">${x.hasPostpone?'เลื่อน':(x.overdue_count>0?'ค้าง':'ปกติ')}</td><td></td></tr>`).join('');
             
             let win = window.open('','_blank');
             win.document.write(`
@@ -631,135 +488,48 @@
                 <head>
                     <title>${fileName}</title>
                     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
-                    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-                    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>
                     <style>
-                        body { font-family: 'Sarabun', sans-serif; background: #555; padding: 20px; display: flex; justify-content: center; margin: 0; }
-                        
-                        /* A4 Paper Style */
-                        .paper { 
-                            background: white; width: 100%; max-width: 800px; padding: 30px; 
-                            box-shadow: 0 0 20px rgba(0,0,0,0.3); box-sizing: border-box; min-height: 29.7cm; 
-                        }
-
+                        body { font-family: 'Sarabun', sans-serif; background: #fff; padding: 20px; }
                         h3 { text-align: center; margin: 0 0 20px 0; font-size: 20px; }
                         table { width:100%; border-collapse:collapse; font-size: 14px; } 
                         th,td { border:1px solid #000; padding:6px; vertical-align: middle; } 
                         th { background-color: #eee; font-weight: 600; }
                         tr:nth-child(even) { background:#f9f9f9; }
-                        td { height: 25px; } 
-
-                        /* Buttons */
-                        .btn-group { 
-                            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); 
-                            display: flex; gap: 10px; z-index: 1000; padding: 10px; 
-                            background: rgba(0,0,0,0.5); border-radius: 30px; backdrop-filter: blur(5px);
-                        }
-                        button { 
-                            padding: 10px 20px; cursor: pointer; border: none; border-radius: 20px; 
-                            color: white; font-weight: 600; font-family: 'Sarabun'; font-size: 14px; 
-                            display: flex; align-items: center; gap: 8px; transition: 0.2s; 
-                        }
-                        button:hover { transform: translateY(-2px); }
-                        .btn-print { background: #2c3e50; }
-                        .btn-img { background: #e67e22; }
-
-                        @media print {
-                            body { background: white; padding: 0; display: block; }
-                            .paper { box-shadow: none; max-width: 100%; padding: 0; width: 100%; min-height: auto; }
-                            .btn-group { display: none !important; }
-                            h3, table, th, td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                        }
+                        @media print { .btn-group { display: none; } }
                     </style>
                 </head>
                 <body>
-                    <div id="captureArea" class="paper">
-                        <h3>ใบงานติดตามหนี้ (${dateStrShort})</h3>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th style="width:40px;">#</th>
-                                    <th style="width:100px;">เลขสัญญา</th>
-                                    <th>ชื่อ - สกุล</th>
-                                    <th style="width:50px;">งวด</th>
-                                    <th style="width:80px;">ยอด</th>
-                                    <th style="width:60px;">สถานะ</th>
-                                    <th>หมายเหตุ / ผลการติดตาม</th>
-                                </tr>
-                            </thead>
-                            <tbody>${rows}</tbody>
-                        </table>
+                    <h3>ใบงานติดตามหนี้ (${dateStrShort})</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width:40px;">#</th>
+                                <th style="width:100px;">เลขสัญญา</th>
+                                <th>ชื่อ - สกุล</th>
+                                <th style="width:50px;">งวด</th>
+                                <th style="width:80px;">ยอด</th>
+                                <th style="width:60px;">สถานะ</th>
+                                <th>หมายเหตุ / ผลการติดตาม</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                    <div class="btn-group" style="text-align:center; margin-top:20px;">
+                        <button onclick="window.print()" style="padding:10px 20px;">สั่งพิมพ์</button>
                     </div>
-
-                    <div class="btn-group">
-                        <button class="btn-print" onclick="window.print()"><i class="fas fa-print"></i> พิมพ์ / PDF</button>
-                        <button class="btn-img" onclick="saveImage()"><i class="fas fa-image"></i> บันทึกเป็นภาพ</button>
-                    </div>
-
-                    <script>
-                        function saveImage() {
-                            const area = document.getElementById('captureArea');
-                            html2canvas(area, {
-                                scale: 2,
-                                useCORS: true,
-                                scrollY: -window.scrollY,
-                                windowHeight: area.scrollHeight + 50
-                            }).then(canvas => {
-                                const link = document.createElement('a');
-                                link.download = '${fileName}.jpg';
-                                link.href = canvas.toDataURL('image/jpeg', 0.9);
-                                link.click();
-                            });
-                        }
-                    <\/script>
                 </body>
                 </html>
             `);
             win.document.close();
         }
 
-        function exportToExcel() {
-            if (!filteredData.length) return;
-            let csv = "data:text/csv;charset=utf-8,\uFEFFลำดับ,เลขสัญญา,ชื่อ,เบอร์,งวด,ยอด,สถานะ\n";
-            filteredData.forEach((i, idx) => csv += `${idx+1},"${i.c_no}","${i.b_name}","${i.b_mobile}",${i.installment_no},${i.finalAmount},"${i.status}"\n`);
-            const link = document.createElement("a"); link.href = encodeURI(csv); link.download = "Report.csv"; link.click();
-        }
+        function exportToExcel() { if (!filteredData.length) return; let csv = "data:text/csv;charset=utf-8,\uFEFFลำดับ,เลขสัญญา,ชื่อ,เบอร์,งวด,ยอด,สถานะ\n"; filteredData.forEach((i, idx) => csv += `${idx+1},"${i.c_no}","${i.b_name}","${i.b_mobile}",${i.installment_no},${i.finalAmount},"${i.status}"\n`); const link = document.createElement("a"); link.href = encodeURI(csv); link.download = "Report.csv"; link.click(); }
         function openPay(c_no) { window.open(`https://kamkywork.github.io/kamkybill-app/?ref=${c_no}`, '_blank'); }
         function hideContract(c_no) { let h=JSON.parse(localStorage.getItem('hiddenContracts')||'[]'); if(!h.includes(String(c_no))){ h.push(String(c_no)); localStorage.setItem('hiddenContracts',JSON.stringify(h)); loadData(); } }
         function resetHidden() { localStorage.removeItem('hiddenContracts'); loadData(); }
-
-        async function openManageMenu(idx, name, c_no) {
-            const { value: action } = await Swal.fire({
-                title: 'จัดการสัญญา', html: `<b>${name}</b> (${c_no})`, input: 'select',
-                inputOptions: { 'hide': '👁️ ซ่อน', 'cancel_contract': '❌ ยกเลิกสัญญา', 'close_account': '✅ ปิดยอด' },
-                inputPlaceholder: 'เลือกรายการ...', showCancelButton: true
-            });
-            if (action) {
-                if (action === 'hide') hideContract(c_no);
-                else {
-                    Swal.fire({ title: 'ยืนยัน?', icon: 'warning', showCancelButton: true, confirmButtonText: 'ยืนยัน' }).then(r => {
-                        if(r.isConfirmed) executeAction({ action: action, c_no: c_no, row_index: idx });
-                    });
-                }
-            }
-        }
-        function openPostpone(idx, name, cur) {
-            let isUpdate = (cur && cur !== '-' && cur !== '');
-            Swal.fire({
-                title: isUpdate ? 'แก้ไขการเลื่อน' : 'เลื่อนนัดหมาย',
-                html: isUpdate ? `เดิม: <b>${cur}</b><br><input type="date" id="swal-date" class="swal2-input">` : `<input type="date" id="swal-date" class="swal2-input">`,
-                showDenyButton: isUpdate, showCancelButton: true, confirmButtonText: 'บันทึก', denyButtonText: 'ลบการเลื่อน',
-                preConfirm: () => document.getElementById('swal-date').value
-            }).then(r => {
-                if(r.isConfirmed && r.value) executeAction({ action: 'postpone', row_index: idx, new_date: r.value });
-                else if(r.isDenied) executeAction({ action: 'postpone', row_index: idx, new_date: "" });
-            });
-        }
-        async function executeAction(p) {
-            Swal.fire({ title: 'บันทึก...', didOpen: () => Swal.showLoading() });
-            try { await fetch(API_URL, { method: 'POST', body: JSON.stringify(p) }); Swal.fire({ icon: 'success', title: 'สำเร็จ', timer: 1000, showConfirmButton: false }); loadData(); } 
-            catch (e) { Swal.fire('Error', 'ผิดพลาด', 'error'); }
-        }
+        async function openManageMenu(idx, name, c_no) { const { value: action } = await Swal.fire({ title: 'จัดการสัญญา', html: `<b>${name}</b> (${c_no})`, input: 'select', inputOptions: { 'hide': '👁️ ซ่อน', 'cancel_contract': '❌ ยกเลิกสัญญา', 'close_account': '✅ ปิดยอด' }, showCancelButton: true }); if (action) { if (action === 'hide') hideContract(c_no); else Swal.fire({ title: 'ยืนยัน?', icon: 'warning', showCancelButton: true, confirmButtonText: 'ยืนยัน' }).then(r => { if(r.isConfirmed) executeAction({ action: action, c_no: c_no, row_index: idx }); }); } }
+        function openPostpone(idx, name, cur) { Swal.fire({ title: 'เลื่อนนัดหมาย', html: `<input type="date" id="swal-date" class="swal2-input">`, showCancelButton: true, confirmButtonText: 'บันทึก', preConfirm: () => document.getElementById('swal-date').value }).then(r => { if(r.isConfirmed && r.value) executeAction({ action: 'postpone', row_index: idx, new_date: r.value }); }); }
+        async function executeAction(p) { Swal.fire({ title: 'บันทึก...', didOpen: () => Swal.showLoading() }); try { await fetch(API_URL, { method: 'POST', body: JSON.stringify(p) }); Swal.fire({ icon: 'success', title: 'สำเร็จ', timer: 1000, showConfirmButton: false }); loadData(); } catch (e) { Swal.fire('Error', 'ผิดพลาด', 'error'); } }
     </script>
 </body>
 </html>
