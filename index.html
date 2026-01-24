@@ -3,61 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ระบบติดตามยอด - Collection System (V.61 Smart Schedule)</title>
+    <title>ระบบติดตามยอด - Collection System (V.65 Final Request Close)</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        /* CSS Original Style V.16/40/58 */
+        /* CSS Style V.65 */
         :root { --primary: #4361ee; --secondary: #3f37c9; --success: #2ec4b6; --warning: #ff9f1c; --danger: #e71d36; --dark: #2b2d42; --light: #f8f9fa; --gray: #8d99ae; --bg: #edf2f4; --card-radius: 16px; }
         body { font-family: 'Sarabun', sans-serif; background: var(--bg); margin: 0; padding: 0; color: var(--dark); -webkit-font-smoothing: antialiased; }
         .header { background: #ffffff; padding: 15px 20px; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
         .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .header h2 { margin: 0; font-size: 20px; font-weight: 700; color: var(--dark); display: flex; align-items: center; gap: 8px; }
-        .tools-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; align-items: center; }
-        .date-input { border: 1px solid #e0e0e0; background: #f9f9f9; padding: 8px 12px; border-radius: 10px; min-width: 130px; font-family: 'Sarabun'; }
+        .tools-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; align-items: center; flex-wrap: wrap; }
+        .date-input, .search-input { border: 1px solid #e0e0e0; background: #f9f9f9; padding: 8px 12px; border-radius: 10px; font-family: 'Sarabun'; }
+        .date-input { min-width: 130px; }
+        
+        /* Search Box Style */
+        .search-box-group { display: flex; align-items: center; background: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 10px; padding-right: 5px; }
+        .search-input { width: 120px; border: none; background: transparent; transition: width 0.3s; }
+        .search-input:focus { width: 160px; outline: none; }
+        .btn-search-icon { color: var(--primary); cursor: pointer; padding: 5px; }
+
         .btn-icon, .btn-pill { border: none; border-radius: 10px; cursor: pointer; transition: 0.2s; color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .btn-icon { width: 38px; height: 38px; flex-shrink: 0; }
         .btn-pill { padding: 8px 15px; font-size: 13px; font-weight: 600; gap: 5px; border-radius: 20px; white-space: nowrap; }
         .btn-refresh { background: var(--warning); } .btn-print { background: var(--dark); } .btn-excel { background: #20bf6b; } .btn-reset { background: var(--gray); }
         .btn-daily { background: linear-gradient(135deg, #ff9f43, #ee5253); } .btn-monthly { background: linear-gradient(135deg, #54a0ff, #5f27cd); }
         .btn-logout { background: #e74c3c; width: auto; padding: 0 12px; font-size: 12px; height: 38px; }
+        
         .perf-container { padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .stat-card { background: white; border-radius: var(--card-radius); padding: 20px; box-shadow: var(--shadow); }
         .stat-header { display: flex; justify-content: space-between; margin-bottom: 15px; font-weight: 600; color: var(--gray); }
         .chart-box { height: 140px; position: relative; margin-bottom: 15px; }
         .stat-footer { display: flex; justify-content: space-between; background: #f8faff; padding: 10px 15px; border-radius: 12px; }
         .stat-item h4 { margin: 0; font-size: 16px; color: var(--dark); } .stat-item span { font-size: 11px; color: var(--gray); }
+        
         .list-container { padding: 0 20px 80px 20px; max-width: 800px; margin: 0 auto; }
-        .cust-card { border-radius: var(--card-radius); margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative; background: white; border-left: 5px solid #ddd; transition: 0.2s; }
-        .card-postpone { background: #fbf5ff; border-left-color: #9b59b6; } .card-overdue { background: #fff0f0; border-left-color: #e74c3c; } .card-pending-approve { background: #fffdf5; border-left-color: #ffca28; } 
+        
+        /* Accordion Style */
+        .accordion-group { margin-bottom: 20px; }
+        .accordion-header {
+            background: white; padding: 12px 15px; border-radius: 12px; cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center;
+            font-weight: bold; color: var(--dark); box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-bottom: 10px; transition: 0.2s;
+        }
+        .accordion-header:hover { background: #f1f4f9; }
+        .accordion-header i { transition: transform 0.3s; }
+        .accordion-content { display: none; animation: slideDown 0.3s ease-out; }
+        .accordion-content.active { display: block; }
+        .badge-count { background: var(--gray); color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; margin-left: auto; margin-right: 10px; }
+        
+        .cust-card { border-radius: var(--card-radius); margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative; background: white; border-left: 5px solid #ddd; transition: 0.2s; }
+        .card-postpone { background: #fbf5ff; border-left-color: #9b59b6; } .card-overdue { background: #fff0f0; border-left-color: #e74c3c; } 
+        .card-pending-approve { background: #fffdf5; border-left-color: #ffca28; } 
+        .card-search-result { border-left-color: #4361ee; background: #f0f4ff; }
+        
         .cust-header { padding: 15px 15px 5px 15px; display: flex; justify-content: space-between; align-items: flex-start; }
         .cust-info h3 { margin: 0 0 4px 0; font-size: 17px; color: var(--dark); }
         .cust-id { font-size: 11px; color: var(--gray); background: rgba(0,0,0,0.03); padding: 3px 8px; border-radius: 6px; display: inline-block; border: 1px solid rgba(0,0,0,0.05); }
         .status-text { font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 5px; }
         .text-green { color: #27ae60; } .text-orange { color: #f39c12; cursor: pointer; text-decoration: underline; } .text-purple { color: #8e44ad; } .text-red { color: #c0392b; }
+        
         .btn-kebab { border: none; background: transparent; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--gray); }
         .cust-body { padding: 0 15px 15px 15px; display: flex; justify-content: space-between; align-items: flex-end; }
         .contact-line { font-size: 13px; color: #555; display: flex; align-items: center; gap: 6px; margin-top: 5px; }
         .amount-val { font-size: 22px; font-weight: 800; color: var(--dark); letter-spacing: -0.5px; }
+        
         .cust-actions { padding: 10px 15px; background: rgba(255,255,255,0.5); border-top: 1px solid rgba(0,0,0,0.05); display: grid; gap: 10px; border-bottom-left-radius: var(--card-radius); border-bottom-right-radius: var(--card-radius); }
         .btn-act, .user-checkbox-btn { border: none; padding: 10px; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; height: 42px; width: 100%; box-sizing: border-box; background: white; border: 1px solid #e0e0e0; color: #555; }
-        .btn-act-call { color: var(--secondary); } .btn-act-contract { background: #34495e; color: white; border:none; } .btn-act-pay { background: var(--dark); color: white; border:none; } .btn-act-postpone { color: #7e22ce; }
-        .grid-admin-actions { grid-template-columns: 1fr 1fr 1fr 1fr; } .grid-user-actions { grid-template-columns: 1fr 1fr; }
-        @media (max-width: 600px) { .perf-container { grid-template-columns: 1fr; } .grid-admin-actions, .grid-user-actions { grid-template-columns: 1fr 1fr !important; } }
-        .login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(43, 45, 66, 0.98); z-index: 9000; display: flex; align-items: center; justify-content: center; }
+        
+        .btn-act-call { color: var(--secondary); } 
+        .btn-act-contract { background: #34495e; color: white; border:none; } 
+        .btn-act-info { background: #1abc9c; color: white; border:none; }
+        .btn-act-pay { background: var(--dark); color: white; border:none; } 
+        .btn-act-postpone { color: #7e22ce; }
+        .btn-disabled { background: #f1f1f1 !important; color: #ccc !important; border: 1px solid #eee !important; cursor: not-allowed !important; }
+        
+        /* Grid Layouts */
+        .grid-admin-actions { grid-template-columns: 1fr 1fr 1fr 1fr; } 
+        .grid-user-actions { grid-template-columns: 1fr 1fr 1fr 1fr; } 
+        @media (max-width: 600px) { 
+            .perf-container { grid-template-columns: 1fr; } 
+            .grid-admin-actions { grid-template-columns: 1fr 1fr; }
+            .grid-user-actions { grid-template-columns: 1fr 1fr; } 
+        }
+        
+        .login-overlay { position: fixed; top: 0; left: 100%; width: 100%; height: 100%; background: rgba(43, 45, 66, 0.98); z-index: 9000; display: flex; align-items: center; justify-content: center; }
         .login-box { background: white; padding: 30px 40px; border-radius: 15px; width: 320px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .user-profile-badge { font-size: 11px; background: #eef3ff; color: var(--primary); padding: 3px 8px; border-radius: 15px; margin-left: 8px; cursor: pointer; display:inline-flex; align-items:center; gap:5px; }
-        .loading-state { text-align: center; padding: 40px; color: var(--gray); } .hidden-elm { display: none !important; }
+        .loading-state { text-align: center; padding: 40px; color: var(--gray); } 
+        .hidden-elm { display: none !important; }
+        
+        @keyframes slideDown { from {opacity:0; transform:translateY(-10px);} to {opacity:1; transform:translateY(0);} }
     </style>
 </head>
 <body>
 
     <canvas id="tempReportChart" width="400" height="400" style="display:none;"></canvas>
 
-    <div id="loginOverlay" class="login-overlay">
+    <div id="loginOverlay" class="login-overlay" style="left:0;">
         <div class="login-box">
             <h2 style="color:var(--dark); margin-bottom:20px;">เข้าสู่ระบบ</h2>
             <input type="text" id="loginUser" class="date-input" style="width:100%; margin-bottom:15px; box-sizing:border-box;" placeholder="ชื่อผู้ใช้งาน">
@@ -76,10 +123,16 @@
             </div>
         </div>
         <div class="tools-bar">
+            <div class="search-box-group">
+                <input type="text" id="searchInput" class="search-input" placeholder="🔍 ค้นเลขสัญญา..." onkeyup="if(event.key==='Enter') doGlobalSearch()">
+                <i class="fas fa-search btn-search-icon" onclick="doGlobalSearch()"></i>
+            </div>
+            
             <input type="date" id="filterDate" class="date-input" onchange="loadData()">
             <button class="btn-icon btn-refresh" onclick="loadData()"><i class="fas fa-sync-alt"></i></button>
             <button class="btn-pill btn-daily" onclick="showSummary('daily')"><i class="fas fa-bolt"></i> สรุปวัน</button>
             <button class="btn-pill btn-monthly" onclick="showSummary('monthly')"><i class="fas fa-calendar-check"></i> สรุปเดือน</button>
+            
             <button id="btnPrint" class="btn-icon btn-print" onclick="printReport()"><i class="fas fa-print"></i></button>
             <button id="btnExcel" class="btn-icon btn-excel" onclick="exportToExcel()"><i class="fas fa-file-excel"></i></button>
             <button id="btnReset" class="btn-icon btn-reset" onclick="resetHidden()"><i class="fas fa-eye"></i></button>
@@ -87,7 +140,7 @@
         </div>
     </div>
 
-    <div class="perf-container">
+    <div class="perf-container" id="statContainer">
         <div class="stat-card">
             <div class="stat-header"><span><i class="fas fa-sun" style="color:#ff9f43"></i> วันนี้</span><span id="txtTodayPercent" style="color:var(--success)">0%</span></div>
             <div class="chart-box"><canvas id="dailyChart"></canvas></div>
@@ -101,18 +154,19 @@
     </div>
 
     <div class="list-container">
-        <div class="section-title">รายการติดตาม (Follow up)</div>
+        <div id="searchResultTitle" style="display:none; margin-bottom:10px; font-weight:bold; color:var(--primary);">ผลการค้นหา: <span id="txtSearchKeyword"></span> <button onclick="clearSearch()" style="background:#ddd; border:none; padding:3px 8px; border-radius:5px; cursor:pointer; font-size:12px;">ล้าง</button></div>
         <div id="contractList"></div>
     </div>
 
     <script>
         // 🔴🔴 ใส่ลิงก์ API 🔴🔴
-        const API_URL = 'https://script.google.com/macros/s/AKfycbzuhlBBg3Z2tsYBmBsnDex04A9j2gaFXgokVdpJnQ7e0MvCrKwQvWY2miZR8nXFdC8D/exec'; 
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxiIqUsr7DeAJW2IDzXKdTKZV3u4tMSQt3aUHrBUxl2gxyjGmZB7T_HrLeSQon2SrOe/exec'; 
         
         let currentUser = null;
         let currentTrackingData = [], filteredData = [], globalSummary = {};
         let dailyChartInstance = null, monthlyChartInstance = null;
         let tempChartInstance = null;
+        let isSearchMode = false;
 
         window.onload = function() {
             const saved = localStorage.getItem('kamky_user');
@@ -151,6 +205,7 @@
         }
 
         async function loadData() {
+            clearSearchUI();
             const date = document.getElementById('filterDate').value;
             const container = document.getElementById('contractList');
             container.innerHTML = '<div class="loading-state">กำลังโหลดข้อมูล...</div>';
@@ -158,114 +213,261 @@
                 const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'get_tracking', date: date }) });
                 const data = await response.json();
                 currentTrackingData = data.contracts || []; globalSummary = data.summary || {};
-                renderDashboard(data, date);
+                renderDashboard(data, date, false);
             } catch (e) { container.innerHTML = '<div class="loading-state" style="color:red">โหลดข้อมูลไม่สำเร็จ</div>'; }
         }
 
-        function renderDashboard(data, selectedDate) {
+        async function doGlobalSearch() {
+            const keyword = document.getElementById('searchInput').value.trim();
+            if(!keyword) return;
+
+            isSearchMode = true;
+            document.getElementById('statContainer').style.display = 'none';
+            document.getElementById('searchResultTitle').style.display = 'block';
+            document.getElementById('txtSearchKeyword').innerText = keyword;
+            
+            const container = document.getElementById('contractList');
+            container.innerHTML = '<div class="loading-state">🔍 กำลังค้นหาข้อมูล...</div>';
+
+            try {
+                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'search_tracking', keyword: keyword }) });
+                const data = await response.json();
+                renderDashboard({ contracts: data.contracts, summary: {} }, null, true);
+            } catch (e) { container.innerHTML = '<div class="loading-state" style="color:red">ไม่พบข้อมูล หรือ เกิดข้อผิดพลาด</div>'; }
+        }
+
+        function clearSearch() { document.getElementById('searchInput').value = ''; clearSearchUI(); loadData(); }
+        function clearSearchUI() { isSearchMode = false; document.getElementById('statContainer').style.display = 'grid'; document.getElementById('searchResultTitle').style.display = 'none'; }
+        
+        function renderDashboard(data, selectedDate, forceShowAll) {
             const container = document.getElementById('contractList'); container.innerHTML = "";
             const hidden = JSON.parse(localStorage.getItem('hiddenContracts') || '[]').map(String);
-            const selectedDateThai = formatDateToThai(selectedDate);
+            const selectedDateThai = selectedDate ? formatDateToThai(selectedDate) : "";
             const isAdmin = currentUser.role === 'admin';
+            
             filteredData = []; let pendingToday = 0;
+            let groups = { searchRes: [], overdue: [], pending: [], normal: [], postpone: [] };
 
             if (data.contracts) {
                 data.contracts.forEach(c => {
-                    if (hidden.includes(String(c.c_no))) return;
-                    const hasPost = (c.postpone_date && c.postpone_date !== "-" && c.postpone_date !== "");
+                    if (!forceShowAll && hidden.includes(String(c.c_no))) return;
                     
-                    // 🔥 Logic สำคัญ V.61: ดึงเฉพาะรายการที่ต้องทำ "ในวันที่เลือก" เท่านั้น
-                    // - ถ้าเลื่อนไปวันอื่นแล้ว -> due_date จะเป็นวันอื่น -> ไม่เข้าเงื่อนไขนี้ -> ไม่โชว์ (ถูกต้อง)
-                    // - ถ้าเลื่อนมาวันนี้ -> due_date จะเป็นวันนี้ -> โชว์ (ถูกต้อง)
-                    if (c.due_date === selectedDateThai || c.overdue_count > 0) {
+                    const hasPost = (c.postpone_date && c.postpone_date !== "-" && c.postpone_date !== "");
+                    let shouldShow = forceShowAll ? true : (c.due_date === selectedDateThai || c.overdue_count > 0);
+
+                    if (shouldShow) {
                         let amt = parseFloat(c.amount) * (c.overdue_count > 1 ? c.overdue_count : 1);
-                        pendingToday += amt;
+                        if(!forceShowAll) pendingToday += amt;
                         
-                        // เช็คเพิ่มสถานะพิเศษสำหรับใบงาน
-                        // ถ้าวันที่เดิมไม่ใช่วันนี้ แต่วันที่นัดคือวันนี้ -> แสดงว่า "เลื่อนมาจาก..."
                         if (c.original_due_date !== selectedDateThai && c.postpone_date === selectedDateThai) {
                             c.worksheetStatus = `เลื่อนมาจาก ${c.original_due_date}`;
                         } else {
-                            c.worksheetStatus = (c.status === 'Pending_Approve' || c.status === 'รอตรวจสอบ') ? 'รอตรวจสอบ' : (c.overdue_count > 0 ? 'ค้างชำระ' : 'ปกติ');
+                            // จัดการสถานะรอตรวจสอบ
+                            if (['Pending_Approve', 'รอตรวจสอบ', 'รอปิดยอด'].includes(c.status)) {
+                                c.worksheetStatus = c.status === 'รอปิดยอด' ? 'รอปิดยอด' : 'รอตรวจสอบ';
+                            } else {
+                                c.worksheetStatus = c.overdue_count > 0 ? 'ค้างชำระ' : 'ปกติ';
+                            }
                         }
 
-                        filteredData.push({ ...c, finalAmount: amt, hasPostpone: hasPost });
+                        let item = { ...c, finalAmount: amt, hasPostpone: hasPost };
+                        filteredData.push(item);
+
+                        if (forceShowAll) groups.searchRes.push(item);
+                        else {
+                            if (c.status === 'Pending_Approve' || c.status === 'รอตรวจสอบ' || c.status === 'รอปิดยอด') groups.pending.push(item);
+                            else if (c.overdue_count > 0) groups.overdue.push(item);
+                            else if (hasPost) groups.postpone.push(item);
+                            else groups.normal.push(item);
+                        }
                     }
                 });
             }
 
-            updateCharts(data.summary, pendingToday);
+            if (!forceShowAll) updateCharts(data.summary, pendingToday);
 
-            if (filteredData.length === 0) { container.innerHTML = '<div class="loading-state">ไม่มีรายการต้องติดตาม</div>'; return; }
+            if (filteredData.length === 0) { container.innerHTML = '<div class="loading-state">ไม่พบรายการ</div>'; return; }
 
-            filteredData.forEach(c => {
-                let cardClass = "card-normal"; let statusHtml = `<span class="status-text text-green"><i class="fas fa-check-circle"></i> ปกติ</span>`;
-                let hasPaymentNote = c.last_note && c.last_note.includes('แจ้งชำระ');
+            if (forceShowAll) {
+                renderAccordionSection(container, '📄 ผลการค้นหา', groups.searchRes, 'open');
+            } else {
+                renderAccordionSection(container, '❗ ค้างชำระ (Overdue)', groups.overdue, 'open');
+                renderAccordionSection(container, '⏳ รอดำเนินการ (Pending)', groups.pending, 'open');
+                renderAccordionSection(container, '📅 รายการวันนี้ (Today)', groups.normal, 'open');
+                renderAccordionSection(container, '⏰ นัดหมายเลื่อน (Postponed)', groups.postpone, '');
+            }
+        }
+
+        function renderAccordionSection(container, title, items, defaultState) {
+            if(items.length === 0) return;
+            const id = 'acc_' + Math.random().toString(36).substr(2, 9);
+            const htmlItems = items.map(c => createCardHtml(c)).join('');
+            
+            container.innerHTML += `
+            <div class="accordion-group">
+                <div class="accordion-header" onclick="toggleAccordion('${id}')">
+                    <span>${title}</span>
+                    <div style="display:flex; align-items:center;">
+                        <span class="badge-count">${items.length}</span>
+                        <i class="fas fa-chevron-down" id="icon_${id}"></i>
+                    </div>
+                </div>
+                <div id="${id}" class="accordion-content ${defaultState==='open'?'active':''}">
+                    ${htmlItems}
+                </div>
+            </div>`;
+        }
+
+        function toggleAccordion(id) {
+            const content = document.getElementById(id);
+            const icon = document.getElementById('icon_' + id);
+            if(content.classList.contains('active')) {
+                content.classList.remove('active');
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                content.classList.add('active');
+                icon.style.transform = 'rotate(180deg)';
+            }
+        }
+
+        function createCardHtml(c) {
+            const isAdmin = currentUser.role === 'admin';
+            let cardClass = isSearchMode ? "card-search-result" : "card-normal"; 
+            let statusHtml = `<span class="status-text text-green"><i class="fas fa-check-circle"></i> ปกติ</span>`;
+            let hasPaymentNote = c.last_note && c.last_note.includes('แจ้งชำระ');
+            
+            // --- Logic Status Badge & Class ---
+            if (c.status === 'Pending_Approve' || c.status === 'รอตรวจสอบ') { 
+                cardClass = "card-pending-approve"; 
+                if(isAdmin) statusHtml = `<span class="status-text text-orange" onclick="adminApprove('${c.c_no}', ${c.row_index}, '${c.request_date}', '${c.last_note || ''}', 'postpone')">⏳ รอตรวจสอบ (กด)</span>`;
+                else statusHtml = `<span class="status-text text-orange">⏳ รอตรวจสอบ</span>`;
+            } 
+            // 🔴 เพิ่ม: สถานะรอปิดยอด
+            else if (c.status === 'รอปิดยอด') {
+                cardClass = "card-pending-approve"; 
+                if(isAdmin) statusHtml = `<span class="status-text text-red" style="cursor:pointer;" onclick="adminApprove('${c.c_no}', ${c.row_index}, '-', '${c.last_note || ''}', 'close')">🏁 รอปิดยอด (กดอนุมัติ)</span>`;
+                else statusHtml = `<span class="status-text text-red">🏁 รออนุมัติปิดยอด</span>`;
+            }
+            else if (c.hasPostpone) { cardClass = "card-postpone"; statusHtml = `<span class="status-text text-purple">⏰ เลื่อน: ${c.postpone_date}</span>`; } 
+            else if (c.overdue_count > 0) { cardClass = "card-overdue"; statusHtml = `<span class="status-text text-red">❗ ค้าง ${c.overdue_count} งวด</span>`; }
+            else if (c.status === 'Close' || c.status === 'Paid') { statusHtml = `<span class="status-text text-green">✅ ปิดบัญชีแล้ว (${c.last_payment_date})</span>`; }
+
+            if (hasPaymentNote) statusHtml += `<div style="font-size:11px; color:#4361ee; background:#eef2ff; padding:4px; border-radius:4px; margin-top:4px; border:1px solid #dce6ff;">💰 ${c.last_note}</div>`;
+
+            let menuButton = isAdmin ? `<button class="btn-kebab" style="margin-left:5px;" onclick="openManageMenu(${c.row_index},'${c.b_name}','${c.c_no}')">⋮</button>` : '';
+            let actionButtonsHtml = '', gridClass = '';
+
+            const hasExtraInfo = (c.contact_image && c.contact_image !== "" && c.contact_image !== "-");
+            const infoBtn = hasExtraInfo 
+                ? `<button class="btn-act btn-act-info" onclick="openContactImage('${c.c_no}')"><i class="fas fa-address-card"></i> ข้อมูลเพิ่มเติม</button>`
+                : `<button class="btn-act btn-disabled" disabled><i class="fas fa-address-card"></i> ข้อมูลเพิ่มเติม</button>`;
+
+            const contractBtn = `<button class="btn-act btn-act-contract" onclick="openContractPopup('${c.c_no}')"><i class="fas fa-file-contract"></i> สัญญา</button>`;
+
+            if (isAdmin) {
+                gridClass = 'grid-admin-actions';
+                actionButtonsHtml = `
+                    <a href="tel:${c.b_mobile}" class="btn-act btn-act-call"><i class="fas fa-phone"></i> โทร</a>
+                    ${infoBtn}
+                    ${contractBtn}
+                    <button class="btn-act btn-act-pay" onclick="openPay('${c.c_no}')"><i class="fas fa-wallet"></i> จ่าย</button>
+                    <button class="btn-act btn-act-postpone" style="grid-column: 1 / -1;" onclick="openPostpone(${c.row_index},'${c.b_name}', '${c.postpone_date||''}')"><i class="fas fa-calendar-check"></i> นัดหมาย</button>
+                `;
+            } else {
+                gridClass = 'grid-user-actions';
+                const isPending = (c.status === 'Pending_Approve' || c.status === 'รอตรวจสอบ' || c.status === 'รอปิดยอด');
                 
-                if (c.status === 'Pending_Approve' || c.status === 'รอตรวจสอบ') { 
-                    cardClass = "card-pending-approve"; 
-                    if(isAdmin) statusHtml = `<span class="status-text text-orange" onclick="adminApprove('${c.c_no}', ${c.row_index}, '${c.request_date}', '${c.last_note || ''}')">⏳ รอตรวจสอบ (กด)</span>`;
-                    else statusHtml = `<span class="status-text text-orange">⏳ รอตรวจสอบ</span>`;
-                } 
-                else if (c.hasPostpone) { cardClass = "card-postpone"; statusHtml = `<span class="status-text text-purple">⏰ เลื่อน: ${c.postpone_date}</span>`; } 
-                else if (c.overdue_count > 0) { cardClass = "card-overdue"; statusHtml = `<span class="status-text text-red">❗ ค้าง ${c.overdue_count} งวด</span>`; }
+                const payBtn = isPending 
+                    ? `<button class="user-checkbox-btn btn-disabled" disabled><i class="fas fa-clock"></i> รออนุมัติ</button>`
+                    : `<button class="user-checkbox-btn" onclick="userReqPay('${c.c_no}')"><i class="far fa-check-square"></i> แจ้งชำระ</button>`;
 
-                if (hasPaymentNote) statusHtml += `<div style="font-size:11px; color:#4361ee; background:#eef2ff; padding:4px; border-radius:4px; margin-top:4px; border:1px solid #dce6ff;">💰 ${c.last_note}</div>`;
+                // 🔴 ปุ่มขอปิดยอด
+                const closeBtn = isPending
+                    ? `<button class="user-checkbox-btn btn-disabled" disabled><i class="fas fa-flag-checkered"></i> ปิดยอด</button>`
+                    : `<button class="user-checkbox-btn" onclick="userReqClose('${c.c_no}')" style="color:#c0392b;"><i class="fas fa-flag-checkered"></i> ขอปิดยอด</button>`;
 
-                let menuButton = isAdmin ? `<button class="btn-kebab" style="margin-left:5px;" onclick="openManageMenu(${c.row_index},'${c.b_name}','${c.c_no}')">⋮</button>` : '';
-                let actionButtonsHtml = '', gridClass = '';
+                actionButtonsHtml = `
+                    <a href="tel:${c.b_mobile}" class="btn-act btn-act-call"><i class="fas fa-phone"></i> โทร</a>
+                    ${infoBtn}
+                    ${contractBtn}
+                    ${payBtn}
+                    <button class="user-checkbox-btn" onclick="userReqPostpone('${c.c_no}')"><i class="far fa-clock"></i> เลื่อนนัด</button>
+                    ${closeBtn}
+                    <button class="user-checkbox-btn" style="grid-column: 1 / -1;" onclick="userAddNote('${c.c_no}')"><i class="fas fa-pen"></i> หมายเหตุ</button>
+                `;
+            }
 
-                if (isAdmin) {
-                    gridClass = 'grid-admin-actions';
-                    actionButtonsHtml = `
-                        <a href="tel:${c.b_mobile}" class="btn-act btn-act-call"><i class="fas fa-phone"></i> โทร</a>
-                        <button class="btn-act btn-act-postpone" onclick="openPostpone(${c.row_index},'${c.b_name}', '${c.postpone_date||''}')"><i class="fas fa-calendar-check"></i> นัดหมาย</button>
-                        <button class="btn-act btn-act-pay" onclick="openPay('${c.c_no}')"><i class="fas fa-wallet"></i> จ่าย</button>
-                        <button class="btn-act btn-act-contract" onclick="openContractPopup('${c.c_no}')"><i class="fas fa-file-contract"></i> สัญญา</button>
-                    `;
-                } else {
-                    gridClass = 'grid-user-actions';
-                    actionButtonsHtml = `
-                        <a href="tel:${c.b_mobile}" class="btn-act btn-act-call"><i class="fas fa-phone"></i> โทร</a>
-                        <button class="btn-act btn-act-contract" onclick="openContractPopup('${c.c_no}')"><i class="fas fa-file-contract"></i> สัญญา</button>
-                        <button class="user-checkbox-btn" onclick="userReqPay('${c.c_no}')"><i class="far fa-square"></i> ชำระแล้ว</button>
-                        <button class="user-checkbox-btn" onclick="userReqPostpone('${c.c_no}')"><i class="far fa-square"></i> เลื่อนนัด</button>
-                        <button class="user-checkbox-btn" style="grid-column: 1 / -1;" onclick="userAddNote('${c.c_no}')"><i class="fas fa-pen"></i> หมายเหตุ</button>
-                    `;
-                }
-
-                container.innerHTML += `
-                <div class="cust-card ${cardClass}">
-                    <div class="cust-header"><div class="cust-info"><h3>${c.b_name}</h3><span class="cust-id">#${c.c_no}</span></div><div class="status-badge">${statusHtml}</div>${menuButton}</div>
-                    <div class="cust-body"><div><div class="contact-line"><i class="fas fa-phone"></i> ${c.b_mobile}</div><div class="contact-line">งวดที่ ${c.installment_no}</div></div><div style="text-align:right"><span style="font-size:10px; color:#777;">ยอดชำระ</span><div class="amount-val">฿${c.finalAmount.toLocaleString()}</div></div></div>
-                    <div class="cust-actions ${gridClass}">${actionButtonsHtml}</div>
-                </div>`;
-            });
+            return `
+            <div class="cust-card ${cardClass}">
+                <div class="cust-header"><div class="cust-info"><h3>${c.b_name}</h3><span class="cust-id">#${c.c_no}</span></div><div class="status-badge">${statusHtml}</div>${menuButton}</div>
+                <div class="cust-body"><div><div class="contact-line"><i class="fas fa-phone"></i> ${c.b_mobile}</div><div class="contact-line">งวดที่ ${c.installment_no}</div></div><div style="text-align:right"><span style="font-size:10px; color:#777;">ยอดชำระ</span><div class="amount-val">฿${c.finalAmount.toLocaleString()}</div></div></div>
+                <div class="cust-actions ${gridClass}">${actionButtonsHtml}</div>
+            </div>`;
         }
 
         async function userReqPay(cNo) {
-            const { value: f } = await Swal.fire({
-                title: 'แจ้งชำระเงิน',
-                html: `<div style="text-align:left; font-size:14px; color:#555; margin-bottom:5px;">ยอดเงิน</div><input id="amt" type="number" class="swal2-input" style="width:100%; box-sizing:border-box;"><div style="text-align:left; font-size:14px; color:#555; margin:10px 0 5px;">วิธีชำระ</div><select id="mth" class="swal2-input" style="width:100%; box-sizing:border-box;"><option>โอน</option><option>โอนร้าน</option><option>เงินสด</option></select><div style="text-align:left; font-size:14px; color:#555; margin:10px 0 5px;">หมายเหตุ</div><input id="rem" class="swal2-input" style="width:100%; box-sizing:border-box;">`,
-                focusConfirm: false, showCancelButton: true, confirmButtonText: 'ยืนยัน',
-                preConfirm: () => { const amt = document.getElementById('amt').value; const mth = document.getElementById('mth').value; const rem = document.getElementById('rem').value; if (!amt) { Swal.showValidationMessage('กรุณาระบุยอด'); return false; } return { amt, mth, rem }; }
+            const result = await Swal.fire({
+                title: 'ยืนยันแจ้งชำระเงิน',
+                text: `ต้องการแจ้งว่าชำระยอดสัญญา ${cNo} แล้วใช่หรือไม่?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '✅ ยืนยันชำระแล้ว',
+                cancelButtonText: 'ยกเลิก',
+                confirmButtonColor: '#27ae60'
             });
-            if (f) sendUserRequest('request_pay', cNo, { note: `แจ้งชำระ: ${f.amt} (${f.mth}) ${f.rem}` });
+
+            if (result.isConfirmed) {
+                sendUserRequest('request_pay', cNo, { note: 'ลูกค้าแจ้งชำระเงินแล้ว (รอตรวจสอบ)' });
+            }
+        }
+
+        // 🔴 ฟังก์ชัน User ขอปิดยอด
+        async function userReqClose(cNo) {
+            const result = await Swal.fire({
+                title: 'แจ้งขอปิดยอดบัญชี',
+                text: `ต้องการแจ้ง Admin เพื่อขอปิดยอดสัญญา ${cNo} ใช่หรือไม่?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: '✅ ยืนยันขอปิดยอด',
+                cancelButtonText: 'ยกเลิก',
+                confirmButtonColor: '#e74c3c'
+            });
+
+            if (result.isConfirmed) {
+                sendUserRequest('request_close', cNo, { note: 'ลูกค้าแจ้งขอปิดยอดบัญชี (รออนุมัติ)' });
+            }
         }
 
         async function userReqPostpone(cNo) { Swal.fire({title:'ขอเลื่อนนัด', input:'date'}).then(r=>{if(r.value) sendUserRequest('request_postpone', cNo, {new_date:r.value});}); }
         async function userAddNote(cNo) { Swal.fire({input:'text', title:'บันทึก'}).then(r=>{if(r.value) sendUserRequest('add_daily_note', cNo, {note:r.value});}); }
         async function sendUserRequest(act, cNo, pl) { Swal.showLoading(); await fetch(API_URL, {method:'POST', body:JSON.stringify({action:'user_action_log', sub_action:act, c_no:cNo, user:currentUser.username, ...pl})}); Swal.fire('ส่งเรื่องแล้ว'); loadData(); }
 
-        async function adminApprove(cNo, rowIndex, reqDate, details) {
+        // 🔴 ฟังก์ชัน Admin อนุมัติ (เพิ่ม Type: close)
+        async function adminApprove(cNo, rowIndex, reqDate, details, type) {
+            let title = 'อนุมัติรายการ';
+            let confirmBtn = '✅ ยืนยันอนุมัติ';
+            let actionType = 'approve_contract'; 
+
+            if (type === 'close') {
+                title = 'อนุมัติปิดยอดบัญชี (Close)';
+                confirmBtn = '🏁 ยืนยันปิดยอด';
+                actionType = 'close_account'; 
+            }
+
             Swal.fire({
-                title: 'อนุมัติรายการ', html: `<p>สัญญา #${cNo}</p><h2 style="color:#4361ee;">${reqDate}</h2><p>${details}</p>`,
-                icon: 'question', showCancelButton: true, confirmButtonText: '✅ ยืนยันอนุมัติ', cancelButtonText: 'ยกเลิก'
+                title: title, 
+                html: `<p>สัญญา #${cNo}</p><h2 style="color:#4361ee;">${reqDate !== '-' ? reqDate : ''}</h2><p>${details}</p>`,
+                icon: 'question', 
+                showCancelButton: true, 
+                confirmButtonText: confirmBtn, 
+                cancelButtonText: 'ยกเลิก'
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     Swal.showLoading();
-                    if (reqDate && reqDate !== '-') await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'postpone', row_index: rowIndex, new_date: reqDate }) });
-                    await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'approve_contract', row_index: rowIndex }) });
+                    if (type === 'postpone' && reqDate && reqDate !== '-') {
+                        await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'postpone', row_index: rowIndex, new_date: reqDate }) });
+                    }
+                    await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: actionType, row_index: rowIndex }) });
                     Swal.fire('เรียบร้อย', '', 'success').then(() => loadData());
                 }
             });
@@ -296,18 +498,13 @@
             if (type === 'daily') {
                 collectedList = currentTrackingData.filter(c => (c.status === 'Close' || c.status === 'Paid') && (c.update_date === dateStr || c.last_payment_date === dateStr));
                 
-                // ดึงรายการ "เลื่อนหนี" เพิ่มเติม (เพราะใน filteredData ปกติเรากรองออก)
-                // ต้อง loop จาก currentTrackingData ทั้งหมดเพื่อหาคนที่หนีไปวันอื่น
                 currentTrackingData.forEach(item => {
-                    // 1. นัดมาวันนี้ -> Appoint
                     if (item.postpone_date === dateStr) {
-                        appointList.push(item);
+                         appointList.push(item);
                     } 
-                    // 2. เดิมต้องจ่ายวันนี้ แต่เลื่อนไปวันอื่น -> Moved
-                    else if (item.original_due_date === dateStr && item.postpone_date && item.postpone_date !== '-' && item.postpone_date !== dateStr) {
+                    else if ((item.original_due_date === dateStr || item.due_date === dateStr) && item.postpone_date && item.postpone_date !== '-' && item.postpone_date !== dateStr) {
                         movedList.push(item);
                     } 
-                    // 3. ปกติ (ถึงกำหนดวันนี้)
                     else if (item.due_date === dateStr || item.overdue_count > 0) {
                         if (item.status !== 'Close' && item.status !== 'Paid') pendingList.push(item);
                     }
@@ -316,10 +513,9 @@
 
             let totalCol = collectedList.reduce((sum, i) => sum + (i.amount_paid ? parseFloat(i.amount_paid) : parseFloat(i.amount)), 0);
             let totalRem = 0;
-            pendingList.forEach(i => totalRem += i.amount); // ใช้ i.amount แทน finalAmount เพราะดึงจาก raw data
+            pendingList.forEach(i => totalRem += i.amount); 
             appointList.forEach(i => totalRem += i.amount);
 
-            // Chart
             const ctx = document.getElementById('tempReportChart').getContext('2d');
             if(tempChartInstance) tempChartInstance.destroy();
             tempChartInstance = new Chart(ctx, { type: 'pie', data: { labels: ['เก็บได้', 'ค้างชำระ'], datasets: [{ data: [totalCol, totalRem], backgroundColor: ['#2ecc71', '#e74c3c'], borderWidth: 1 }] }, options: { animation: false, responsive: false } });
@@ -349,9 +545,9 @@
                     detailsHtml += `</tbody></table>`;
 
                     // 4. Moved Away
-                    detailsHtml += `<h3 style="color:#8e44ad; border-bottom:2px solid #8e44ad; padding-bottom:5px;">🔜 ถูกเลื่อนออกไป (Deferred) <span style="font-size:12px; font-weight:normal;">*ไม่รวมยอด</span></h3>`;
+                    detailsHtml += `<h3 style="color:#d35400; border-bottom:2px solid #d35400; padding-bottom:5px;">🔜 ถูกเลื่อนออกไป (Deferred)</h3>`;
                     detailsHtml += `<table style="width:100%; border-collapse:collapse; font-size:14px;"><thead><tr style="background:#eee;"><th style="border:1px solid #ddd;">สัญญา</th><th style="border:1px solid #ddd;">ชื่อ</th><th style="border:1px solid #ddd;">เลื่อนไป</th><th style="border:1px solid #ddd;" align="right">ยอด</th><th style="border:1px solid #ddd;">หมายเหตุ</th></tr></thead><tbody>`;
-                    if(movedList.length){ movedList.forEach(i => { detailsHtml += `<tr><td style="border:1px solid #ddd;">${i.c_no}</td><td style="border:1px solid #ddd;">${i.b_name}</td><td style="border:1px solid #ddd; font-weight:bold;">${i.postpone_date}</td><td style="border:1px solid #ddd;" align="right">${parseFloat(i.amount).toLocaleString()}</td><td style="border:1px solid #ddd;">${i.last_note||'-'}</td></tr>`; }); } else { detailsHtml += `<tr><td colspan="5" style="text-align:center;border:1px solid #ddd;">- ไม่มี -</td></tr>`; }
+                    if(movedList.length){ movedList.forEach(i => { detailsHtml += `<tr><td style="border:1px solid #ddd;">${i.c_no}</td><td style="border:1px solid #ddd;">${i.b_name}</td><td style="border:1px solid #ddd; font-weight:bold; color:#d35400;">${i.postpone_date}</td><td style="border:1px solid #ddd;" align="right">${parseFloat(i.amount).toLocaleString()}</td><td style="border:1px solid #ddd;">${i.last_note||'-'}</td></tr>`; }); } else { detailsHtml += `<tr><td colspan="5" style="text-align:center;border:1px solid #ddd;">- ไม่มี -</td></tr>`; }
                     detailsHtml += `</tbody></table>`;
                 }
 
@@ -383,7 +579,6 @@
             }, 500);
         }
 
-        // Worksheet
         function printReport() {
             if (!filteredData.length) return;
             const rawDate = document.getElementById('filterDate').value;
@@ -408,7 +603,6 @@
             win.document.close();
         }
 
-        // Utils
         function formatDateToThai(dateString) { if(!dateString) return ""; const p = dateString.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }
         function updateChart(id, type, val1, val2) { const ctx = document.getElementById(id).getContext('2d'); let colors = type === 'daily' ? ['#2ec4b6', '#edf2f4'] : ['#4361ee', '#edf2f4']; if (val2 > 0) colors = type === 'daily' ? ['#2ec4b6', '#e71d36'] : ['#4361ee', '#edf2f4']; let config = { type: 'doughnut', data: { datasets: [{ data: [val1, val2], backgroundColor: colors, borderWidth: 0 }] }, options: { cutout: '85%', plugins: { legend: { display: false } } } }; if(type==='daily'){ if(dailyChartInstance) dailyChartInstance.destroy(); dailyChartInstance=new Chart(ctx, config); } else{ if(monthlyChartInstance) monthlyChartInstance.destroy(); monthlyChartInstance=new Chart(ctx, config); } }
         function updateCharts(summary, pending) { const colToday=summary.total_collected_today||0; document.getElementById('txtTodayCollected').innerText=colToday.toLocaleString(); document.getElementById('txtTodayPending').innerText=pending.toLocaleString(); document.getElementById('txtTodayPercent').innerText=(colToday+pending)>0?Math.round((colToday/(colToday+pending))*100)+'%':'0%'; updateChart('dailyChart',colToday,pending); const colMonth=summary.total_collected_month||0; const tarMonth=summary.expected_month||0; document.getElementById('txtMonthCollected').innerText=colMonth.toLocaleString(); document.getElementById('txtMonthTarget').innerText=tarMonth.toLocaleString(); document.getElementById('txtMonthPercent').innerText=tarMonth>0?Math.round((colMonth/tarMonth)*100)+'%':'0%'; updateChart('monthlyChart',colMonth,Math.max(0,tarMonth-colMonth)); }
@@ -418,7 +612,17 @@
         function resetHidden() { localStorage.removeItem('hiddenContracts'); loadData(); }
         async function openManageMenu(idx, name, c_no) { const { value: action } = await Swal.fire({ title: name, input: 'select', inputOptions: { 'hide': '👁️ ซ่อน', 'cancel_contract': '❌ ยกเลิกสัญญา', 'close_account': '✅ ปิดยอด' }, showCancelButton: true }); if(action){ if(action==='hide') hideContract(c_no); else Swal.fire({title:'ยืนยัน?',showCancelButton:true}).then(r=>{if(r.isConfirmed) executeAction({action,c_no,row_index:idx})}); } }
         async function executeAction(p) { Swal.fire({ title: 'บันทึก...', didOpen: () => Swal.showLoading() }); try { await fetch(API_URL, { method: 'POST', body: JSON.stringify(p) }); Swal.fire({ icon: 'success', title: 'สำเร็จ', timer: 1000, showConfirmButton: false }); loadData(); } catch (e) { Swal.fire('Error', 'ผิดพลาด', 'error'); } }
+        
         async function openContractPopup(cNo) { Swal.showLoading(); const res = await fetch(API_URL, { method: 'POST', redirect: 'follow', headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: 'get_contract_image', c_no: cNo }) }); const d = await res.json(); if(d.status==='success') Swal.fire({ imageUrl: d.url, width: '95%', showCloseButton: true, confirmButtonText: 'ปิด' }); else Swal.fire({ icon: 'warning', title: 'ไม่พบไฟล์' }); }
+        
+        async function openContactImage(cNo) { 
+            Swal.showLoading(); 
+            const res = await fetch(API_URL, { method: 'POST', redirect: 'follow', headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: 'get_contract_image', c_no: cNo, type: 'contact_aw' }) }); 
+            const d = await res.json(); 
+            if(d.status==='success') Swal.fire({ imageUrl: d.url, width: '95%', showCloseButton: true, confirmButtonText: 'ปิด' }); 
+            else Swal.fire({ icon: 'warning', title: 'ไม่พบข้อมูลเพิ่มเติม (AW)' }); 
+        }
+
         function userProfile() { Swal.fire({ title: 'ข้อมูลผู้ใช้', html: `<b>${currentUser.name}</b><br>สถานะ: ${currentUser.role}`, showDenyButton: true, confirmButtonText: 'เปลี่ยนรหัสผ่าน', denyButtonText: 'ปิด' }).then(r => { if(r.isConfirmed) changePass(); }); }
         async function changePass() { const { value: p } = await Swal.fire({ title: 'ตั้งรหัสใหม่', input: 'password' }); if(p) { await fetch(API_URL, { method:'POST', body:JSON.stringify({action:'change_password', username:currentUser.username, new_pass:p}) }); Swal.fire('สำเร็จ'); } }
     </script>
