@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ระบบติดตามยอด - Collection System (V.65 Final Request Close)</title>
+    <title>ระบบติดตามยอด - Collection System (V.66 Final)</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        /* CSS Style V.65 */
+        /* CSS Style V.66 */
         :root { --primary: #4361ee; --secondary: #3f37c9; --success: #2ec4b6; --warning: #ff9f1c; --danger: #e71d36; --dark: #2b2d42; --light: #f8f9fa; --gray: #8d99ae; --bg: #edf2f4; --card-radius: 16px; }
         body { font-family: 'Sarabun', sans-serif; background: var(--bg); margin: 0; padding: 0; color: var(--dark); -webkit-font-smoothing: antialiased; }
         .header { background: #ffffff; padding: 15px 20px; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
@@ -160,7 +160,7 @@
 
     <script>
         // 🔴🔴 ใส่ลิงก์ API 🔴🔴
-        const API_URL = 'https://script.google.com/macros/s/AKfycbxiIqUsr7DeAJW2IDzXKdTKZV3u4tMSQt3aUHrBUxl2gxyjGmZB7T_HrLeSQon2SrOe/exec'; 
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzpiHctlgnOlLNPc7fxU5VGBj1XsSctVWXiejaoGlDeEsYl3R1wzbbZ8L36iYvrh_yH/exec'; 
         
         let currentUser = null;
         let currentTrackingData = [], filteredData = [], globalSummary = {};
@@ -262,7 +262,6 @@
                         if (c.original_due_date !== selectedDateThai && c.postpone_date === selectedDateThai) {
                             c.worksheetStatus = `เลื่อนมาจาก ${c.original_due_date}`;
                         } else {
-                            // จัดการสถานะรอตรวจสอบ
                             if (['Pending_Approve', 'รอตรวจสอบ', 'รอปิดยอด'].includes(c.status)) {
                                 c.worksheetStatus = c.status === 'รอปิดยอด' ? 'รอปิดยอด' : 'รอตรวจสอบ';
                             } else {
@@ -342,7 +341,6 @@
                 if(isAdmin) statusHtml = `<span class="status-text text-orange" onclick="adminApprove('${c.c_no}', ${c.row_index}, '${c.request_date}', '${c.last_note || ''}', 'postpone')">⏳ รอตรวจสอบ (กด)</span>`;
                 else statusHtml = `<span class="status-text text-orange">⏳ รอตรวจสอบ</span>`;
             } 
-            // 🔴 เพิ่ม: สถานะรอปิดยอด
             else if (c.status === 'รอปิดยอด') {
                 cardClass = "card-pending-approve"; 
                 if(isAdmin) statusHtml = `<span class="status-text text-red" style="cursor:pointer;" onclick="adminApprove('${c.c_no}', ${c.row_index}, '-', '${c.last_note || ''}', 'close')">🏁 รอปิดยอด (กดอนุมัติ)</span>`;
@@ -358,10 +356,13 @@
             let actionButtonsHtml = '', gridClass = '';
 
             const hasExtraInfo = (c.contact_image && c.contact_image !== "" && c.contact_image !== "-");
+            
+            // 🔴 ปุ่มข้อมูลเพิ่มเติม (ดึงจาก Column AW)
             const infoBtn = hasExtraInfo 
                 ? `<button class="btn-act btn-act-info" onclick="openContactImage('${c.c_no}')"><i class="fas fa-address-card"></i> ข้อมูลเพิ่มเติม</button>`
                 : `<button class="btn-act btn-disabled" disabled><i class="fas fa-address-card"></i> ข้อมูลเพิ่มเติม</button>`;
 
+            // 🔴 ปุ่มสัญญา (ดึงจากโฟลเดอร์ JPG)
             const contractBtn = `<button class="btn-act btn-act-contract" onclick="openContractPopup('${c.c_no}')"><i class="fas fa-file-contract"></i> สัญญา</button>`;
 
             if (isAdmin) {
@@ -381,7 +382,6 @@
                     ? `<button class="user-checkbox-btn btn-disabled" disabled><i class="fas fa-clock"></i> รออนุมัติ</button>`
                     : `<button class="user-checkbox-btn" onclick="userReqPay('${c.c_no}')"><i class="far fa-check-square"></i> แจ้งชำระ</button>`;
 
-                // 🔴 ปุ่มขอปิดยอด
                 const closeBtn = isPending
                     ? `<button class="user-checkbox-btn btn-disabled" disabled><i class="fas fa-flag-checkered"></i> ปิดยอด</button>`
                     : `<button class="user-checkbox-btn" onclick="userReqClose('${c.c_no}')" style="color:#c0392b;"><i class="fas fa-flag-checkered"></i> ขอปิดยอด</button>`;
@@ -421,7 +421,6 @@
             }
         }
 
-        // 🔴 ฟังก์ชัน User ขอปิดยอด
         async function userReqClose(cNo) {
             const result = await Swal.fire({
                 title: 'แจ้งขอปิดยอดบัญชี',
@@ -442,7 +441,6 @@
         async function userAddNote(cNo) { Swal.fire({input:'text', title:'บันทึก'}).then(r=>{if(r.value) sendUserRequest('add_daily_note', cNo, {note:r.value});}); }
         async function sendUserRequest(act, cNo, pl) { Swal.showLoading(); await fetch(API_URL, {method:'POST', body:JSON.stringify({action:'user_action_log', sub_action:act, c_no:cNo, user:currentUser.username, ...pl})}); Swal.fire('ส่งเรื่องแล้ว'); loadData(); }
 
-        // 🔴 ฟังก์ชัน Admin อนุมัติ (เพิ่ม Type: close)
         async function adminApprove(cNo, rowIndex, reqDate, details, type) {
             let title = 'อนุมัติรายการ';
             let confirmBtn = '✅ ยืนยันอนุมัติ';
@@ -617,6 +615,7 @@
         
         async function openContactImage(cNo) { 
             Swal.showLoading(); 
+            // 🔴 แจ้ง Backend ให้ดึง Column AW โดยส่ง type: 'contact_aw'
             const res = await fetch(API_URL, { method: 'POST', redirect: 'follow', headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: 'get_contract_image', c_no: cNo, type: 'contact_aw' }) }); 
             const d = await res.json(); 
             if(d.status==='success') Swal.fire({ imageUrl: d.url, width: '95%', showCloseButton: true, confirmButtonText: 'ปิด' }); 
