@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ระบบติดตามยอด - Collection System (V.69 Postpone Included)</title>
+    <title>ระบบติดตามยอด - Collection System (V.70 Slip Attachment)</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        /* CSS Style V.69 */
+        /* CSS Style V.70 */
         :root { --primary: #4361ee; --secondary: #3f37c9; --success: #2ec4b6; --warning: #ff9f1c; --danger: #e71d36; --dark: #2b2d42; --light: #f8f9fa; --gray: #8d99ae; --bg: #edf2f4; --card-radius: 16px; }
         body { font-family: 'Sarabun', sans-serif; background: var(--bg); margin: 0; padding: 0; color: var(--dark); -webkit-font-smoothing: antialiased; }
         .header { background: #ffffff; padding: 15px 20px; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
@@ -63,6 +63,8 @@
         .user-profile-badge { font-size: 11px; background: #eef3ff; color: var(--primary); padding: 3px 8px; border-radius: 15px; margin-left: 8px; cursor: pointer; display:inline-flex; align-items:center; gap:5px; }
         .loading-state { text-align: center; padding: 40px; color: var(--gray); } .hidden-elm { display: none !important; }
         @keyframes slideDown { from {opacity:0; transform:translateY(-10px);} to {opacity:1; transform:translateY(0);} }
+        /* Style for file input in SweetAlert */
+        .swal2-file-input { font-size: 14px; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -128,13 +130,21 @@
     </div>
 
     <script>
-        // 🔴🔴 ใส่ลิงก์ API ของคุณที่นี่ 🔴🔴
-        const API_URL = 'https://script.google.com/macros/s/AKfycbz_QqVho1nCFLHyTdKWtgHoQGqRvaju2KUCOXwNjgD7_f-7zwV-qBIpd2zGaXoqDVhw/exec'; 
+        // 🔴🔴 ใส่ลิงก์ API (Web App URL) ของคุณที่นี่ 🔴🔴
+        const API_URL = 'https://script.google.com/macros/s/AKfycbw_7YSJ0_tm7p37uKHJSMK9uJpx48XgvlFFChkyRSlY5EGjLPsL0dxdcp1doqci12f_/exec'; 
         
         let currentUser = null;
         let currentTrackingData = [], filteredData = [], globalSummary = {};
         let dailyChartInstance = null, monthlyChartInstance = null;
         let isSearchMode = false;
+
+        // --- Helper: แปลงไฟล์เป็น Base64 ---
+        const toBase64 = file => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
 
         window.onload = function() {
             const saved = localStorage.getItem('kamky_user');
@@ -207,7 +217,6 @@
         function clearSearch() { document.getElementById('searchInput').value = ''; clearSearchUI(); loadData(); }
         function clearSearchUI() { isSearchMode = false; document.getElementById('statContainer').style.display = 'grid'; document.getElementById('searchResultTitle').style.display = 'none'; }
         
-        // --- ฟังก์ชันหลักที่ปรับปรุง Logic --
         function renderDashboard(data, selectedDate, forceShowAll) {
             const container = document.getElementById('contractList'); container.innerHTML = "";
             const hidden = JSON.parse(localStorage.getItem('hiddenContracts') || '[]').map(String);
@@ -228,12 +237,10 @@
                     const amount = parseFloat(c.amount || 0);
                     const isPaid = ['Paid', 'Close', 'รอปิดยอด'].includes(c.status);
                     
-                    // --- Logic 1: เป้าวันนี้ (รวมยอดเดิม + ยอดที่เลื่อนนัดมาวันนี้) ---
                     const isPostponedToToday = (c.postpone_date === selectedDateThai);
                     const isDueToday = (c.due_date === selectedDateThai);
                     const hasPostpone = (c.postpone_date && c.postpone_date !== "-" && c.postpone_date !== "");
                     
-                    // ถ้า (เลื่อนมาวันนี้) หรือ (ครบกำหนดวันนี้ และไม่ได้เลื่อนไปวันอื่น)
                     let isTargetToday = false;
                     if (isPostponedToToday) isTargetToday = true;
                     else if (isDueToday && !hasPostpone) isTargetToday = true;
@@ -243,7 +250,6 @@
                         if (isPaid) strictDailyCollected += amount;
                     }
 
-                    // --- Logic 2: เป้าเดือนนี้ ---
                     if (c.due_date) {
                         const parts = c.due_date.split('/'); 
                         if(parts.length === 3) {
@@ -404,19 +410,118 @@
             </div>`;
         }
 
+        // --- ฟังก์ชันแจ้งชำระ พร้อมแนบสลิป (แก้ไขใหม่) ---
         async function userReqPay(cNo) {
-            const result = await Swal.fire({ title: 'ยืนยันแจ้งชำระเงิน', text: `ต้องการแจ้งว่าชำระยอดสัญญา ${cNo} แล้วใช่หรือไม่?`, icon: 'question', showCancelButton: true, confirmButtonText: '✅ ยืนยันชำระแล้ว', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#27ae60' });
-            if (result.isConfirmed) sendUserRequest('request_pay', cNo, { note: 'ลูกค้าแจ้งชำระเงินแล้ว (รอตรวจสอบ)' });
+            const { value: formValues } = await Swal.fire({
+                title: 'ยืนยันแจ้งชำระเงิน',
+                html: `
+                    <div style="text-align:left; font-size:14px; margin-bottom:5px;">แนบสลิปการโอนเงิน (จำเป็น):</div>
+                    <input type="file" id="swal-input-file" class="swal2-input" accept="image/*" style="width:80%; margin:0 auto; display:block;">
+                    <input type="text" id="swal-input-note" class="swal2-input" placeholder="ระบุเพิ่มเติม (ถ้ามี)" style="margin-top:10px;">
+                `,
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonText: '✅ ยืนยันส่งข้อมูล',
+                cancelButtonText: 'ยกเลิก',
+                confirmButtonColor: '#27ae60',
+                preConfirm: () => {
+                    const fileInput = document.getElementById('swal-input-file');
+                    const noteInput = document.getElementById('swal-input-note').value;
+                    if (fileInput.files.length === 0) {
+                        Swal.showValidationMessage('กรุณาแนบสลิปการโอนเงิน');
+                        return false;
+                    }
+                    const file = fileInput.files[0];
+                    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                        Swal.showValidationMessage('ไฟล์มีขนาดใหญ่เกินไป (ต้องไม่เกิน 5MB)');
+                        return false;
+                    }
+                    return { file: file, note: noteInput };
+                }
+            });
+
+            if (formValues) {
+                Swal.fire({ title: 'กำลังอัปโหลดสลิป...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                try {
+                    const base64Str = await toBase64(formValues.file);
+                    // ส่งข้อมูลไป API
+                    await sendUserRequest('request_pay', cNo, { 
+                        note: 'แจ้งชำระเงิน: ' + (formValues.note || '-'),
+                        slip_image: base64Str,
+                        slip_name: `slip_${cNo}_${new Date().getTime()}.jpg`,
+                        slip_mime: formValues.file.type
+                    });
+                } catch (error) {
+                    Swal.fire('Error', 'เกิดข้อผิดพลาดในการเตรียมไฟล์', 'error');
+                }
+            }
         }
 
+        // --- ฟังก์ชันขอปิดยอด พร้อมแนบสลิป (แก้ไขใหม่) ---
         async function userReqClose(cNo) {
-            const result = await Swal.fire({ title: 'แจ้งขอปิดยอดบัญชี', text: `ต้องการแจ้ง Admin เพื่อขอปิดยอดสัญญา ${cNo} ใช่หรือไม่?`, icon: 'warning', showCancelButton: true, confirmButtonText: '✅ ยืนยันขอปิดยอด', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#e74c3c' });
-            if (result.isConfirmed) sendUserRequest('request_close', cNo, { note: 'ลูกค้าแจ้งขอปิดยอดบัญชี (รออนุมัติ)' });
+            const { value: formValues } = await Swal.fire({
+                title: 'แจ้งขอปิดยอดบัญชี',
+                html: `
+                    <p style="font-size:14px; color:#c0392b; margin-bottom:10px;">ต้องการแจ้งปิดยอดสัญญา ${cNo}</p>
+                    <div style="text-align:left; font-size:14px; margin-bottom:5px;">แนบสลิปยอดปิดบัญชี (จำเป็น):</div>
+                    <input type="file" id="swal-input-file-close" class="swal2-input" accept="image/*" style="width:80%; margin:0 auto; display:block;">
+                    <input type="text" id="swal-input-note-close" class="swal2-input" placeholder="หมายเหตุเพิ่มเติม" style="margin-top:10px;">
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: '✅ ยืนยันขอปิดยอด',
+                cancelButtonText: 'ยกเลิก',
+                confirmButtonColor: '#e74c3c',
+                preConfirm: () => {
+                    const fileInput = document.getElementById('swal-input-file-close');
+                    const noteInput = document.getElementById('swal-input-note-close').value;
+                    if (fileInput.files.length === 0) {
+                        Swal.showValidationMessage('กรุณาแนบสลิปเพื่อยืนยันการปิดยอด');
+                        return false;
+                    }
+                    return { file: fileInput.files[0], note: noteInput };
+                }
+            });
+
+            if (formValues) {
+                Swal.fire({ title: 'กำลังอัปโหลด...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                try {
+                    const base64Str = await toBase64(formValues.file);
+                    await sendUserRequest('request_close', cNo, { 
+                        note: 'ขอปิดยอดบัญชี: ' + (formValues.note || '-'),
+                        slip_image: base64Str,
+                        slip_name: `close_${cNo}_${new Date().getTime()}.jpg`,
+                        slip_mime: formValues.file.type
+                    });
+                } catch (e) {
+                    Swal.fire('Error', 'อัปโหลดไม่สำเร็จ', 'error');
+                }
+            }
         }
 
         async function userReqPostpone(cNo) { Swal.fire({title:'ขอเลื่อนนัด', input:'date'}).then(r=>{if(r.value) sendUserRequest('request_postpone', cNo, {new_date:r.value});}); }
         async function userAddNote(cNo) { Swal.fire({input:'text', title:'บันทึก'}).then(r=>{if(r.value) sendUserRequest('add_daily_note', cNo, {note:r.value});}); }
-        async function sendUserRequest(act, cNo, pl) { Swal.showLoading(); await fetch(API_URL, {method:'POST', body:JSON.stringify({action:'user_action_log', sub_action:act, c_no:cNo, user:currentUser.username, ...pl})}); Swal.fire('ส่งเรื่องแล้ว'); loadData(); }
+        
+        // ฟังก์ชันส่งข้อมูลรวมถึงรูปภาพไปยัง Apps Script
+        async function sendUserRequest(act, cNo, pl) { 
+            Swal.showLoading(); 
+            try {
+                await fetch(API_URL, {
+                    method:'POST', 
+                    body:JSON.stringify({
+                        action:'user_action_log', 
+                        sub_action:act, 
+                        c_no:cNo, 
+                        user:currentUser.username, 
+                        ...pl
+                    })
+                }); 
+                Swal.fire({icon:'success', title:'บันทึกสำเร็จ', timer:1500, showConfirmButton:false}); 
+                loadData(); 
+            } catch(e) {
+                Swal.fire('Error', 'ส่งข้อมูลล้มเหลว', 'error');
+            }
+        }
 
         async function adminApprove(cNo, rowIndex, reqDate, details, type) {
             let title = type === 'close' ? 'อนุมัติปิดยอดบัญชี (Close)' : 'อนุมัติรายการ';
@@ -449,7 +554,6 @@
                 if (cMonthStr < currentMonthStr && !isPaid) { oldOverdueList.push(c); totalOldOverdue += amount; }
                 if (cMonthStr === currentMonthStr) { currentMonthList.push(c); totalMonthTarget += amount; if(isPaid) totalMonthCollected += amount; }
                 
-                // --- Logic: รวมรายการที่ "ครบกำหนดวันนี้" หรือ "เลื่อนมาวันนี้" ---
                 const isPostponedToToday = (c.postpone_date === dateStr);
                 const isDueToday = (c.due_date === dateStr);
                 const hasPostpone = (c.postpone_date && c.postpone_date !== "-" && c.postpone_date !== "");
