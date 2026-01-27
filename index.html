@@ -450,45 +450,51 @@
             </div>`;
         }
 
-        // ✅ User: รองรับการเลือกหลายไฟล์ (Multiple)
-        async function userReqPay(cNo) {
-            const { value: formValues } = await Swal.fire({
-                title: 'ยืนยันแจ้งชำระเงิน',
-                html: `
-                    <div style="text-align:left; font-size:14px; margin-bottom:5px;">แนบสลิปการโอนเงิน (เลือกได้หลายใบ):</div>
-                    <input type="file" id="swal-input-file" class="swal2-input" accept="image/*" multiple style="width:80%; margin:0 auto; display:block;">
-                    <input type="text" id="swal-input-note" class="swal2-input" placeholder="ระบุเพิ่มเติม (ถ้ามี)" style="margin-top:10px;">
-                `,
-                icon: 'info',
-                showCancelButton: true,
-                confirmButtonText: '✅ ยืนยันส่งข้อมูล',
-                cancelButtonText: 'ยกเลิก',
-                confirmButtonColor: '#27ae60',
-                preConfirm: () => {
-                    const fileInput = document.getElementById('swal-input-file');
-                    const noteInput = document.getElementById('swal-input-note').value;
-                    if (fileInput.files.length === 0) { Swal.showValidationMessage('กรุณาแนบสลิปการโอนเงินอย่างน้อย 1 ใบ'); return false; }
-                    return { files: fileInput.files, note: noteInput };
-                }
-            });
-
-            if (formValues) {
-                Swal.fire({ title: 'กำลังอัปโหลดสลิป...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-                try {
-                    let slips = [];
-                    for(let i=0; i<formValues.files.length; i++){
-                        const file = formValues.files[i];
-                        const base64Str = await toBase64(file);
-                        slips.push({ image: base64Str, name: `slip_${cNo}_${new Date().getTime()}_${i}.jpg`, mime: file.type });
-                    }
-
-                    await sendUserRequest('request_pay', cNo, { 
-                        note: 'แจ้งชำระเงิน: ' + (formValues.note || '-'),
-                        slips: slips
-                    });
-                } catch (error) { Swal.fire('Error', 'เกิดข้อผิดพลาดในการเตรียมไฟล์', 'error'); }
-            }
+        // ✅ แก้ไข: ไม่บังคับแนบสลิป (แนบหรือไม่ก็ได้)
+async function userReqPay(cNo) {
+    const { value: formValues } = await Swal.fire({
+        title: 'ยืนยันแจ้งชำระเงิน',
+        html: `
+            <div style="text-align:left; font-size:14px; margin-bottom:5px;">แนบสลิปการโอนเงิน (ถ้ามี):</div>
+            <input type="file" id="swal-input-file" class="swal2-input" accept="image/*" multiple style="width:80%; margin:0 auto; display:block;">
+            <input type="text" id="swal-input-note" class="swal2-input" placeholder="ระบุเพิ่มเติม (ถ้ามี)" style="margin-top:10px;">
+        `,
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonText: '✅ ยืนยันส่งข้อมูล',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#27ae60',
+        preConfirm: () => {
+            const fileInput = document.getElementById('swal-input-file');
+            const noteInput = document.getElementById('swal-input-note').value;
+            
+            // 🔴 ลบส่วนตรวจสอบไฟล์ออก (Comment หรือลบทิ้ง)
+            // if (fileInput.files.length === 0) { Swal.showValidationMessage('กรุณาแนบสลิปการโอนเงินอย่างน้อย 1 ใบ'); return false; }
+            
+            return { files: fileInput.files, note: noteInput };
         }
+    });
+
+    if (formValues) {
+        Swal.fire({ title: 'กำลังบันทึกข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        try {
+            let slips = [];
+            // ระบบจะทำงานต่อได้แม้ไม่มีไฟล์ (Loop นี้จะไม่ทำงานถ้า files.length เป็น 0)
+            if (formValues.files.length > 0) {
+                for(let i=0; i<formValues.files.length; i++){
+                    const file = formValues.files[i];
+                    const base64Str = await toBase64(file);
+                    slips.push({ image: base64Str, name: `slip_${cNo}_${new Date().getTime()}_${i}.jpg`, mime: file.type });
+                }
+            }
+
+            await sendUserRequest('request_pay', cNo, { 
+                note: 'แจ้งชำระเงิน: ' + (formValues.note || '-'),
+                slips: slips 
+            });
+        } catch (error) { Swal.fire('Error', 'เกิดข้อผิดพลาดในการเตรียมไฟล์', 'error'); }
+    }
+}
 
         async function userReqClose(cNo) {
             const { value: formValues } = await Swal.fire({
