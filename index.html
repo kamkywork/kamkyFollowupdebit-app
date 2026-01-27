@@ -221,10 +221,17 @@
             const container = document.getElementById('contractList'); container.innerHTML = "";
             const hidden = JSON.parse(localStorage.getItem('hiddenContracts') || '[]').map(String);
             
+            // ✅ แปลงวันที่เป็น พ.ศ. ให้ตรงกับ App Script
             const selectedDateThai = selectedDate ? formatDateToThai(selectedDate) : "";
-            const selectedMonthStr = selectedDate ? selectedDate.substring(0, 7) : ""; 
+            let selectedYearTH = "";
+            let selectedMonthOnly = "";
+            if(selectedDate) {
+               let d = new Date(selectedDate);
+               selectedYearTH = d.getFullYear() + 543;
+               selectedMonthOnly = ("0" + (d.getMonth() + 1)).slice(-2);
+            }
+            const selectedMonthStr = `${selectedYearTH}-${selectedMonthOnly}`; 
             
-            filteredData = []; 
             let groups = { searchRes: [], overdue: [], pending: [], normal: [], postpone: [] };
 
             let strictDailyTarget = 0;   
@@ -263,8 +270,8 @@
 
                     if (!forceShowAll && hidden.includes(String(c.c_no))) return;
                     
-                    const hasPost = (c.postpone_date && c.postpone_date !== "-" && c.postpone_date !== "");
-                    let shouldShow = forceShowAll ? true : (c.due_date === selectedDateThai || c.overdue_count > 0);
+                    // ✅ กรองการแสดงผล
+                    let shouldShow = forceShowAll ? true : (isTargetToday || c.overdue_count > 0 || ['Pending_Approve', 'รอตรวจสอบ', 'รอปิดยอด'].includes(c.status));
 
                     if (shouldShow) {
                         let amt = parseFloat(c.amount) * (c.overdue_count > 1 ? c.overdue_count : 1);
@@ -279,15 +286,20 @@
                             }
                         }
 
-                        let item = { ...c, finalAmount: amt, hasPostpone: hasPost };
-                        filteredData.push(item);
-
-                        if (forceShowAll) groups.searchRes.push(item);
-                        else {
-                            if (c.status === 'Pending_Approve' || c.status === 'รอตรวจสอบ' || c.status === 'รอปิดยอด') groups.pending.push(item);
-                            else if (c.overdue_count > 0) groups.overdue.push(item);
-                            else if (hasPost) groups.postpone.push(item);
-                            else groups.normal.push(item);
+                        let item = { ...c, finalAmount: amt, hasPostpone: hasPostpone };
+                        
+                        if (forceShowAll) {
+                            groups.searchRes.push(item);
+                        } else {
+                            if (c.status === 'Pending_Approve' || c.status === 'รอตรวจสอบ' || c.status === 'รอปิดยอด') {
+                                groups.pending.push(item);
+                            } else if (c.overdue_count > 0) {
+                                groups.overdue.push(item);
+                            } else if (isPostponedToToday) { 
+                                groups.postpone.push(item);
+                            } else {
+                                groups.normal.push(item); 
+                            }
                         }
                     }
                 });
@@ -297,15 +309,25 @@
                 updateCharts(strictDailyTarget, strictDailyCollected, strictMonthlyTarget, strictMonthlyCollected);
             }
 
-            if (filteredData.length === 0) { container.innerHTML = '<div class="loading-state">ไม่พบรายการ</div>'; return; }
+            // ✅ เรียงลำดับข้อมูลใบงาน (Print Worksheet) ให้ตรงกับหน้าจอ
+            filteredData = [];
+            if(forceShowAll) {
+                 filteredData = [...groups.searchRes];
+            } else {
+                 // ลำดับ: รอตรวจสอบ -> ปกติ -> เลื่อน -> ค้างชำระ
+                 filteredData = [...groups.pending, ...groups.normal, ...groups.postpone, ...groups.overdue];
+            }
 
+            if (filteredData.length === 0) { container.innerHTML = '<div class="loading-state">ไม่พบรายการต้องติดตามในวันนี้</div>'; return; }
+
+            // ✅ เรียงลำดับ Accordion หน้าจอ
             if (forceShowAll) {
                 renderAccordionSection(container, '📄 ผลการค้นหา', groups.searchRes, 'open');
             } else {
-                renderAccordionSection(container, '❗ ค้างชำระ (Overdue)', groups.overdue, 'open');
                 renderAccordionSection(container, '⏳ รอดำเนินการ (Pending)', groups.pending, 'open');
-                renderAccordionSection(container, '📅 รายการวันนี้ (Today)', groups.normal, 'open');
-                renderAccordionSection(container, '⏰ นัดหมายเลื่อน (Postponed)', groups.postpone, '');
+                renderAccordionSection(container, '📅 ปกติ: ครบกำหนดวันนี้ (Today)', groups.normal, 'open');
+                renderAccordionSection(container, '⏰ นัดหมายเลื่อนมาวันนี้ (Postponed)', groups.postpone, 'open');
+                renderAccordionSection(container, '❗ เกินกำหนดชำระ (Overdue)', groups.overdue, 'open');
             }
         }
 
@@ -410,7 +432,6 @@
             </div>`;
         }
 
-        // --- ฟังก์ชันแจ้งชำระ พร้อมแนบสลิป (แก้ไขใหม่) ---
         async function userReqPay(cNo) {
             const { value: formValues } = await Swal.fire({
                 title: 'ยืนยันแจ้งชำระเงิน',
@@ -427,15 +448,9 @@
                 preConfirm: () => {
                     const fileInput = document.getElementById('swal-input-file');
                     const noteInput = document.getElementById('swal-input-note').value;
-                    if (fileInput.files.length === 0) {
-                        Swal.showValidationMessage('กรุณาแนบสลิปการโอนเงิน');
-                        return false;
-                    }
+                    if (fileInput.files.length === 0) { Swal.showValidationMessage('กรุณาแนบสลิปการโอนเงิน'); return false; }
                     const file = fileInput.files[0];
-                    if (file.size > 5 * 1024 * 1024) { // 5MB limit
-                        Swal.showValidationMessage('ไฟล์มีขนาดใหญ่เกินไป (ต้องไม่เกิน 5MB)');
-                        return false;
-                    }
+                    if (file.size > 5 * 1024 * 1024) { Swal.showValidationMessage('ไฟล์มีขนาดใหญ่เกินไป (ต้องไม่เกิน 5MB)'); return false; }
                     return { file: file, note: noteInput };
                 }
             });
@@ -444,20 +459,11 @@
                 Swal.fire({ title: 'กำลังอัปโหลดสลิป...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
                 try {
                     const base64Str = await toBase64(formValues.file);
-                    // ส่งข้อมูลไป API
-                    await sendUserRequest('request_pay', cNo, { 
-                        note: 'แจ้งชำระเงิน: ' + (formValues.note || '-'),
-                        slip_image: base64Str,
-                        slip_name: `slip_${cNo}_${new Date().getTime()}.jpg`,
-                        slip_mime: formValues.file.type
-                    });
-                } catch (error) {
-                    Swal.fire('Error', 'เกิดข้อผิดพลาดในการเตรียมไฟล์', 'error');
-                }
+                    await sendUserRequest('request_pay', cNo, { note: 'แจ้งชำระเงิน: ' + (formValues.note || '-'), slip_image: base64Str, slip_name: `slip_${cNo}_${new Date().getTime()}.jpg`, slip_mime: formValues.file.type });
+                } catch (error) { Swal.fire('Error', 'เกิดข้อผิดพลาดในการเตรียมไฟล์', 'error'); }
             }
         }
 
-        // --- ฟังก์ชันขอปิดยอด พร้อมแนบสลิป (แก้ไขใหม่) ---
         async function userReqClose(cNo) {
             const { value: formValues } = await Swal.fire({
                 title: 'แจ้งขอปิดยอดบัญชี',
@@ -475,10 +481,7 @@
                 preConfirm: () => {
                     const fileInput = document.getElementById('swal-input-file-close');
                     const noteInput = document.getElementById('swal-input-note-close').value;
-                    if (fileInput.files.length === 0) {
-                        Swal.showValidationMessage('กรุณาแนบสลิปเพื่อยืนยันการปิดยอด');
-                        return false;
-                    }
+                    if (fileInput.files.length === 0) { Swal.showValidationMessage('กรุณาแนบสลิปเพื่อยืนยันการปิดยอด'); return false; }
                     return { file: fileInput.files[0], note: noteInput };
                 }
             });
@@ -487,40 +490,21 @@
                 Swal.fire({ title: 'กำลังอัปโหลด...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
                 try {
                     const base64Str = await toBase64(formValues.file);
-                    await sendUserRequest('request_close', cNo, { 
-                        note: 'ขอปิดยอดบัญชี: ' + (formValues.note || '-'),
-                        slip_image: base64Str,
-                        slip_name: `close_${cNo}_${new Date().getTime()}.jpg`,
-                        slip_mime: formValues.file.type
-                    });
-                } catch (e) {
-                    Swal.fire('Error', 'อัปโหลดไม่สำเร็จ', 'error');
-                }
+                    await sendUserRequest('request_close', cNo, { note: 'ขอปิดยอดบัญชี: ' + (formValues.note || '-'), slip_image: base64Str, slip_name: `close_${cNo}_${new Date().getTime()}.jpg`, slip_mime: formValues.file.type });
+                } catch (e) { Swal.fire('Error', 'อัปโหลดไม่สำเร็จ', 'error'); }
             }
         }
 
         async function userReqPostpone(cNo) { Swal.fire({title:'ขอเลื่อนนัด', input:'date'}).then(r=>{if(r.value) sendUserRequest('request_postpone', cNo, {new_date:r.value});}); }
         async function userAddNote(cNo) { Swal.fire({input:'text', title:'บันทึก'}).then(r=>{if(r.value) sendUserRequest('add_daily_note', cNo, {note:r.value});}); }
         
-        // ฟังก์ชันส่งข้อมูลรวมถึงรูปภาพไปยัง Apps Script
         async function sendUserRequest(act, cNo, pl) { 
             Swal.showLoading(); 
             try {
-                await fetch(API_URL, {
-                    method:'POST', 
-                    body:JSON.stringify({
-                        action:'user_action_log', 
-                        sub_action:act, 
-                        c_no:cNo, 
-                        user:currentUser.username, 
-                        ...pl
-                    })
-                }); 
+                await fetch(API_URL, { method:'POST', body:JSON.stringify({ action:'user_action_log', sub_action:act, c_no:cNo, user:currentUser.username, ...pl }) }); 
                 Swal.fire({icon:'success', title:'บันทึกสำเร็จ', timer:1500, showConfirmButton:false}); 
                 loadData(); 
-            } catch(e) {
-                Swal.fire('Error', 'ส่งข้อมูลล้มเหลว', 'error');
-            }
+            } catch(e) { Swal.fire('Error', 'ส่งข้อมูลล้มเหลว', 'error'); }
         }
 
         async function adminApprove(cNo, rowIndex, reqDate, details, type) {
@@ -536,122 +520,117 @@
 
         function showSummary(type) { Swal.fire({ title: `สรุป${type==='daily'?'รายวัน':'รายเดือน'}`, showCancelButton:true, confirmButtonText:'เปิดรายงาน' }).then(r=>{if(r.isConfirmed) printSummaryReport(type)}); }
 
+        // ✅ ฟังก์ชันรายงานฉบับใหม่ (แก้ไขตามที่ขอ)
         function printSummaryReport(type) {
             const rawDate = document.getElementById('filterDate').value;
             const dateStr = formatDateToThai(rawDate);
-            const dateObj = new Date(rawDate);
-            const currentMonthStr = `${dateObj.getFullYear()}-${(dateObj.getMonth()+1).toString().padStart(2,'0')}`;
+            let dateObj = new Date(rawDate);
+            let yearTH = dateObj.getFullYear() + 543;
+            const currentMonthStr = `${yearTH}-${(dateObj.getMonth()+1).toString().padStart(2,'0')}`;
             
-            let oldOverdueList = [], currentMonthList = [], todayDueList = [], collectedTodayList = [];
-            let totalOldOverdue = 0, totalMonthTarget = 0, totalMonthCollected = 0;
+            let listPaid = [], listDue = [], listOverdue = [];
             
             currentTrackingData.forEach(c => {
                 const amount = parseFloat(c.amount);
                 let cDateParts = c.due_date.split('/');
                 let cMonthStr = cDateParts.length === 3 ? `${cDateParts[2]}-${cDateParts[1]}` : ''; 
+                
                 let isPaid = ['Paid', 'Close', 'รอปิดยอด'].includes(c.status);
+                let isTargetDay = false;
+                if(c.postpone_date === dateStr) isTargetDay = true;
+                else if(c.due_date === dateStr && (!c.postpone_date || c.postpone_date==='-')) isTargetDay = true;
+                else if(isPaid && (c.update_date === dateStr || c.last_payment_date === dateStr)) isTargetDay = true;
 
-                if (cMonthStr < currentMonthStr && !isPaid) { oldOverdueList.push(c); totalOldOverdue += amount; }
-                if (cMonthStr === currentMonthStr) { currentMonthList.push(c); totalMonthTarget += amount; if(isPaid) totalMonthCollected += amount; }
-                
-                const isPostponedToToday = (c.postpone_date === dateStr);
-                const isDueToday = (c.due_date === dateStr);
-                const hasPostpone = (c.postpone_date && c.postpone_date !== "-" && c.postpone_date !== "");
-                
-                if (isPostponedToToday) todayDueList.push({ ...c, isPostponed: true });
-                else if (isDueToday && !hasPostpone) todayDueList.push(c);
+                let includeInReport = false;
+                if (type === 'daily') {
+                    if (isTargetDay) includeInReport = true;
+                    if (!isPaid && cMonthStr < currentMonthStr) includeInReport = true; 
+                } else {
+                    if (cMonthStr === currentMonthStr) includeInReport = true;
+                    if (!isPaid && cMonthStr < currentMonthStr) includeInReport = true;
+                }
 
-                if (isPaid && (c.update_date === dateStr || c.last_payment_date === dateStr)) collectedTodayList.push(c);
+                if (includeInReport) {
+                    if (isPaid) {
+                        listPaid.push(c);
+                    } else if (c.overdue_count > 0 || (cMonthStr < currentMonthStr)) {
+                        listOverdue.push(c);
+                    } else {
+                        listDue.push(c);
+                    }
+                }
             });
 
+            const sumPaid = listPaid.reduce((a,b)=>a+(parseFloat(b.amount_paid||b.amount)),0);
+            const sumDue = listDue.reduce((a,b)=>a+parseFloat(b.amount),0);
+            const sumOverdue = listOverdue.reduce((a,b)=>a+parseFloat(b.amount),0);
+            const totalAmount = sumPaid + sumDue + sumOverdue;
+
             const now = new Date();
-            const fileName = `Report_${type}_${now.getTime()}`;
-            let htmlContent = '';
+            const fileNameDate = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate()}`;
+            const fileName = `Report_${type}_${dateStr.replace(/\//g,'-')}_${fileNameDate}`;
+            
             const style = `
                 <style>
                     body { font-family: 'Sarabun', sans-serif; padding: 20px; background: #f9f9f9; }
                     .report-box { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.05); margin-bottom: 20px; max-width: 800px; margin-left: auto; margin-right: auto; }
                     .header-title { text-align: center; border-bottom: 2px solid #ddd; padding-bottom: 10px; margin-bottom: 20px; }
-                    .summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-                    .card { padding: 15px; border-radius: 8px; text-align: center; color: white; }
-                    .card-red { background: #e74c3c; } .card-blue { background: #4361ee; } .card-green { background: #27ae60; }
-                    .card h3 { margin: 0; font-size: 14px; opacity: 0.9; } .card h2 { margin: 5px 0 0 0; font-size: 24px; }
-                    table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
-                    th { background: #eee; padding: 8px; border: 1px solid #ddd; text-align: left; }
-                    td { padding: 8px; border: 1px solid #ddd; }
-                    .badge { padding: 2px 6px; border-radius: 4px; font-size: 11px; }
-                    .bg-ok { background: #e8f8f5; color: #27ae60; } .bg-wait { background: #fef9e7; color: #f1c40f; } .bg-move { background: #fbf5ff; color: #8e44ad; }
-                    .section-head { margin-top: 25px; font-size: 16px; font-weight: bold; border-left: 5px solid #4361ee; padding-left: 10px; color: #333; }
+                    .header-title h2 { margin: 0; color: #2b2d42; }
+                    table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; margin-bottom: 20px; }
+                    th { background: #eee; padding: 8px; border: 1px solid #ddd; text-align: left; color: #333; }
+                    td { padding: 8px; border: 1px solid #ddd; vertical-align: middle; }
+                    .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-block; }
+                    .status-paid { background: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
+                    .status-due { background: #fff3cd; color: #664d03; border: 1px solid #ffecb5; }
+                    .status-overdue { background: #f8d7da; color: #842029; border: 1px solid #f5c2c7; }
+                    .section-head { margin-top: 10px; font-size: 15px; font-weight: bold; padding: 5px 10px; background: #f8f9fa; border-left: 5px solid #ccc; color: #333; }
+                    .summary-table td { font-weight: bold; }
+                    .text-right { text-align: right; }
+                    .text-center { text-align: center; }
                     .hide-on-print { margin-top:20px; text-align:center; display:flex; justify-content:center; gap:10px; }
+                    @media print { .hide-on-print { display: none; } body { background: white; } .report-box { box-shadow: none; } }
                 </style>`;
 
-            const createTable = (list) => {
-                if(list.length === 0) return '<div style="text-align:center; color:#999; padding:10px; border:1px dashed #ccc;">- ไม่มีรายการ -</div>';
-                let trs = list.map(i => {
-                    let statusClass = ['Paid','Close'].includes(i.status) ? 'bg-ok' : 'bg-wait';
-                    let extra = '';
-                    if (i.isPostponed) extra = '<span class="badge bg-move">เลื่อนมา</span> ';
-                    return `<tr><td>${i.c_no}</td><td>${i.b_name}</td><td align="right">${parseFloat(i.amount).toLocaleString()}</td><td align="center">${extra}<span class="badge ${statusClass}">${i.status}</span></td><td>${i.last_note || ''}</td></tr>`;
+            const createRows = (list, type) => {
+                if(list.length === 0) return `<tr><td colspan="5" class="text-center" style="color:#999;">- ไม่มีรายการ -</td></tr>`;
+                return list.map((i, idx) => {
+                    let statusBadge = '';
+                    let note = i.last_note || '';
+                    if (type === 'paid') {
+                        statusBadge = `<span class="badge status-paid">ชำระแล้ว</span>`;
+                    } else if (type === 'due') {
+                        statusBadge = `<span class="badge status-due">ครบกำหนดชำระ</span>`;
+                    } else if (type === 'overdue') {
+                        let ovTxt = i.overdue_count > 0 ? ` (${i.overdue_count} งวด)` : '';
+                        statusBadge = `<span class="badge status-overdue">ค้างชำระ${ovTxt}</span>`;
+                    }
+                    if (i.postpone_date && i.postpone_date !== '-' && type !== 'paid') {
+                        note = `<span style="color:#6f42c1; font-size:11px;">[เลื่อนมา]</span> ` + note;
+                    }
+                    return `<tr><td class="text-center">${idx+1}</td><td>${i.c_no} <br><span style="font-size:11px; color:#666;">${i.b_name}</span></td><td class="text-right">${parseFloat(i.amount).toLocaleString()}</td><td class="text-center">${statusBadge}</td><td>${note}</td></tr>`;
                 }).join('');
-                return `<table><thead><tr><th>สัญญา</th><th>ชื่อลูกค้า</th><th align="right">ยอด</th><th align="center">สถานะ</th><th>หมายเหตุ</th></tr></thead><tbody>${trs}</tbody></table>`;
             };
 
-            if (type === 'daily') {
-                let todayTarget = todayDueList.reduce((s,i)=>s+parseFloat(i.amount),0);
-                let todayCollected = collectedTodayList.reduce((s,i)=>s+(i.amount_paid?parseFloat(i.amount_paid):parseFloat(i.amount)),0);
-                htmlContent = `
-                    <div class="report-box" id="captureArea">
-                        <div class="header-title"><h2>📅 สรุปประจำวัน (Daily)</h2><span>วันที่: ${dateStr}</span></div>
-                        <div style="background:#fff0f0; border:1px solid #e74c3c; padding:15px; border-radius:8px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;">
-                            <div><h3 style="color:#c0392b; margin:0;">⚠️ ค้างสะสมจากเดือนก่อน</h3></div>
-                            <div style="text-align:right;"><h2 style="color:#c0392b; margin:0;">${totalOldOverdue.toLocaleString()} ฿</h2><span style="font-size:12px;">(${oldOverdueList.length} สัญญา)</span></div>
-                        </div>
-                        <div class="summary-grid">
-                            <div class="card card-blue"><h3>เป้าต้องเก็บวันนี้</h3><h2>${todayTarget.toLocaleString()}</h2></div>
-                            <div class="card card-green"><h3>เก็บได้วันนี้</h3><h2>${todayCollected.toLocaleString()}</h2></div>
-                            <div class="card" style="background:#7f8c8d;"><h3>คงเหลือวันนี้</h3><h2>${Math.max(0, todayTarget - todayCollected).toLocaleString()}</h2></div>
-                        </div>
-                        <div class="section-head">📋 รายการต้องเก็บวันนี้ (รวมที่เลื่อนมา)</div>${createTable(todayDueList)}
-                        <div class="section-head">💰 เก็บได้จริงวันนี้ (Collected)</div>${createTable(collectedTodayList)}
-                        ${oldOverdueList.length > 0 ? `<div class="section-head" style="color:#c0392b; border-color:#c0392b;">❗ รายชื่อค้างเดือนเก่า (Old Overdue)</div>` + createTable(oldOverdueList) : ''}
-                    </div>`;
-            } else if (type === 'monthly') {
-                let percent = totalMonthTarget > 0 ? ((totalMonthCollected/totalMonthTarget)*100).toFixed(1) : 0;
-                let remaining = totalMonthTarget - totalMonthCollected;
-                htmlContent = `
-                    <div class="report-box" id="captureArea">
-                        <div class="header-title"><h2>📊 สรุปประจำเดือน (Monthly)</h2><span>เดือน: ${new Date(rawDate).toLocaleString('th-TH', { month: 'long', year: 'numeric' })}</span></div>
-                        <div class="summary-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
-                            <div class="card card-red"><h3>ค้างยกมา</h3><h2>${totalOldOverdue.toLocaleString()}</h2></div>
-                            <div class="card card-blue"><h3>เป้าเดือนนี้</h3><h2>${totalMonthTarget.toLocaleString()}</h2></div>
-                            <div class="card card-green"><h3>เก็บได้รวม</h3><h2>${totalMonthCollected.toLocaleString()}</h2></div>
-                            <div class="card" style="background:${remaining>0?'#f39c12':'#27ae60'};"><h3>เหลือเก็บ</h3><h2>${remaining.toLocaleString()}</h2></div>
-                        </div>
-                        <div style="text-align:center; margin-bottom:20px; font-weight:bold; color:#4361ee;">ความสำเร็จ: ${percent}%</div>
-                        <div class="section-head">📅 สถานะลูกหนี้เดือนนี้</div>${createTable(currentMonthList.filter(x => !['Paid','Close'].includes(x.status)))} 
-                        <br><div class="section-head" style="color:#7f8c8d; border-color:#7f8c8d;">✅ ปิดยอดแล้ว</div>${createTable(currentMonthList.filter(x => ['Paid','Close'].includes(x.status)))}
-                    </div>`;
-            }
+            const htmlContent = `
+                <div class="report-box" id="captureArea">
+                    <div class="header-title"><h2>📊 รายงานสรุป${type==='daily'?'ประจำวัน':'ประจำเดือน'}</h2><span style="font-size:14px; color:#555;">วันที่ข้อมูล: ${dateStr}</span></div>
+                    <div class="section-head" style="border-color:#198754; color:#198754;">1. รายการชำระแล้ว (Paid)</div>
+                    <table><thead><tr><th width="5%">#</th><th width="30%">สัญญา/ชื่อ</th><th width="15%" class="text-right">ยอด</th><th width="20%" class="text-center">สถานะ</th><th width="30%">หมายเหตุ</th></tr></thead><tbody>${createRows(listPaid, 'paid')}</tbody></table>
+                    <div class="section-head" style="border-color:#ffc107; color:#b58900;">2. รายการครบกำหนด (Due)</div>
+                    <table><thead><tr><th width="5%">#</th><th width="30%">สัญญา/ชื่อ</th><th width="15%" class="text-right">ยอด</th><th width="20%" class="text-center">สถานะ</th><th width="30%">หมายเหตุ</th></tr></thead><tbody>${createRows(listDue, 'due')}</tbody></table>
+                    <div class="section-head" style="border-color:#dc3545; color:#dc3545;">3. รายการค้างชำระ (Overdue)</div>
+                    <table><thead><tr><th width="5%">#</th><th width="30%">สัญญา/ชื่อ</th><th width="15%" class="text-right">ยอด</th><th width="20%" class="text-center">สถานะ</th><th width="30%">หมายเหตุ</th></tr></thead><tbody>${createRows(listOverdue, 'overdue')}</tbody></table>
+                    <div class="section-head" style="background:#2b2d42; color:white; border:none; text-align:center;">สรุปยอดรวมตามสถานะ</div>
+                    <table class="summary-table">
+                        <tr style="background:#e8f8f5;"><td>1. ยอดชำระแล้ว (Paid)</td><td class="text-right" style="color:#198754;">${sumPaid.toLocaleString()} บาท</td><td class="text-center">${listPaid.length} รายการ</td></tr>
+                        <tr style="background:#fffdf5;"><td>2. ยอดครบกำหนด (Due)</td><td class="text-right" style="color:#d63384;">${sumDue.toLocaleString()} บาท</td><td class="text-center">${listDue.length} รายการ</td></tr>
+                        <tr style="background:#f8d7da;"><td>3. ยอดค้างชำระ (Overdue)</td><td class="text-right" style="color:#dc3545;">${sumOverdue.toLocaleString()} บาท</td><td class="text-center">${listOverdue.length} รายการ</td></tr>
+                        <tr style="background:#eee; border-top:2px solid #aaa;"><td><b>รวมทั้งหมด (Total)</b></td><td class="text-right"><b>${totalAmount.toLocaleString()} บาท</b></td><td class="text-center"><b>${listPaid.length + listDue.length + listOverdue.length} รายการ</b></td></tr>
+                    </table>
+                </div>`;
 
             let win = window.open('', '_blank');
-            win.document.write(`<html><head><title>${fileName}</title><link href="https://fonts.googleapis.com/css2?family=Sarabun&display=swap" rel="stylesheet"><script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"><\/script>${style}</head><body>
-                ${htmlContent}
-                <div class="hide-on-print">
-                    <button onclick="window.print()" style="padding:10px 20px; cursor:pointer;">🖨️ พิมพ์</button>
-                    <button onclick="saveAsImage()" style="padding:10px 20px; cursor:pointer; background:#27ae60; color:white; border:none; border-radius:5px;">📷 บันทึกเป็นรูปภาพ</button>
-                </div>
-                <script>
-                    function saveAsImage() {
-                        const element = document.getElementById('captureArea');
-                        html2canvas(element, { scale: 2, backgroundColor: '#ffffff' }).then(canvas => {
-                            const link = document.createElement('a');
-                            link.download = '${fileName}.jpg';
-                            link.href = canvas.toDataURL('image/jpeg');
-                            link.click();
-                        });
-                    }
-                <\/script>
-            </body></html>`);
+            win.document.write(`<html><head><title>${fileName}</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&display=swap" rel="stylesheet"><script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"><\/script>${style}</head><body>${htmlContent}<div class="hide-on-print"><button onclick="window.print()" style="padding:10px 20px; cursor:pointer; background:#2b2d42; color:white; border:none; border-radius:5px;">🖨️ พิมพ์รายงาน</button><button onclick="saveAsImage()" style="padding:10px 20px; cursor:pointer; background:#27ae60; color:white; border:none; border-radius:5px;">📷 บันทึกรูปภาพ</button></div><script>function saveAsImage() { const element = document.getElementById('captureArea'); html2canvas(element, { scale: 2, backgroundColor: '#ffffff' }).then(canvas => { const link = document.createElement('a'); link.download = '${fileName}.jpg'; link.href = canvas.toDataURL('image/jpeg'); link.click(); }); }<\/script></body></html>`);
             win.document.close();
         }
 
@@ -669,7 +648,13 @@
             win.document.close();
         }
 
-        function formatDateToThai(dateString) { if(!dateString) return ""; const p = dateString.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }
+        // ✅ เพิ่ม +543 เพื่อให้เป็น พ.ศ. ตรงกับฐานข้อมูล
+        function formatDateToThai(dateString) { 
+            if(!dateString) return ""; 
+            const p = dateString.split('-'); 
+            let year = parseInt(p[0]) + 543;
+            return `${p[2]}/${p[1]}/${year}`; 
+        }
         
         function updateCharts(dailyTarget, dailyCollected, monthlyTarget, monthlyCollected) {
             const remainingDaily = Math.max(0, dailyTarget - dailyCollected);
