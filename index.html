@@ -131,7 +131,7 @@
 
     <script>
         // 🔴🔴 ใส่ลิงก์ API (Web App URL) ของคุณที่นี่ 🔴🔴
-        const API_URL = 'https://script.google.com/macros/s/AKfycbzzK6g9nWe2AbKi-e8fj3HK6gxHT-fGPNKgh8KOipdr4as5hWINwjzEAJcE1vcGG9ZH/exec'; 
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzAGL9yrh56rV3mBlZ9REFC9kXVNKdvDJVMJ3ILseXYACy1iI7kblLTC0NCQ68v-Uqr/exec'; 
         
         let currentUser = null;
         let currentTrackingData = [], filteredData = [], globalSummary = {};
@@ -540,7 +540,8 @@
             } catch(e) { Swal.fire('Error', 'ส่งข้อมูลล้มเหลว', 'error'); }
         }
 
-        // ✅ Admin: เพิ่มปุ่ม "ตีกลับ" (Deny) พร้อมส่งข้อมูลเหตุผล
+        // ✅ Admin: ปรับปรุงใหม่ เพิ่มการเด้งไปหน้าใบเสร็จหลังอนุมัติ
+        // 🔴 ปรับปรุง: ใช้ URL โดยตรง
         async function adminApprove(cNo, rowIndex, reqDate, details, type) {
             let title = type === 'close' ? 'อนุมัติปิดยอดบัญชี (Close)' : 'อนุมัติรายการ';
             let confirmBtn = type === 'close' ? '🏁 ยืนยันปิดยอด' : '✅ ยืนยันอนุมัติ';
@@ -551,19 +552,38 @@
                 html: `<p>สัญญา #${cNo}</p><h2 style="color:#4361ee;">${reqDate !== '-' ? reqDate : ''}</h2><p>${details}</p>`, 
                 icon: 'question', 
                 showCancelButton: true, 
-                showDenyButton: true, // เปิดปุ่ม Deny
+                showDenyButton: true, 
                 denyButtonText: '❌ ตีกลับ (ให้แก้ไข)',
                 confirmButtonText: confirmBtn, 
                 cancelButtonText: 'ยกเลิก' 
             }).then(async (result) => { 
                 if (result.isConfirmed) { 
-                    // อนุมัติปกติ
+                    // 1. ทำการอนุมัติในระบบ
                     Swal.showLoading(); 
-                    if (type === 'postpone' && reqDate && reqDate !== '-') { await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'postpone', row_index: rowIndex, new_date: reqDate }) }); } 
+                    if (type === 'postpone' && reqDate && reqDate !== '-') { 
+                        await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'postpone', row_index: rowIndex, new_date: reqDate }) }); 
+                    } 
                     await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: actionType, row_index: rowIndex }) }); 
-                    Swal.fire('เรียบร้อย', '', 'success').then(() => loadData()); 
+                    
+                    // 2. เมื่อบันทึกสำเร็จ ถาม Admin ว่าจะไปออกใบเสร็จเลยไหม
+                    Swal.fire({
+                        title: '✅ อนุมัติสำเร็จ!',
+                        text: "ต้องการออกใบเสร็จรับเงินเดี๋ยวนี้เลยหรือไม่?",
+                        icon: 'success',
+                        showCancelButton: true,
+                        confirmButtonText: '🖨️ ไปหน้าออกใบเสร็จ',
+                        cancelButtonText: 'ปิด',
+                        confirmButtonColor: '#2c3e50'
+                    }).then((r) => {
+                        if (r.isConfirmed) {
+                            // เปิดหน้า Bill พร้อมส่งเลขสัญญาไปด้วย
+                            window.open(`https://kamkywork.github.io/kamkybill-app/?ref=${encodeURIComponent(cNo)}`, '_blank');
+                        }
+                        loadData(); // รีโหลดข้อมูลในหน้าติดตาม
+                    });
+
                 } else if (result.isDenied) {
-                    // กรอกเหตุผลการตีกลับ
+                    // กรณีตีกลับ (เหมือนเดิม)
                     const { value: reason } = await Swal.fire({
                         title: 'ระบุเหตุผลที่ตีกลับ',
                         input: 'text',
@@ -573,7 +593,6 @@
                     
                     if (reason) {
                         Swal.showLoading();
-                        // ส่ง Action "reject_request" ไป Backend
                         await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'reject_request', row_index: rowIndex, reason: reason }) });
                         Swal.fire('บันทึกการตีกลับแล้ว', '', 'success').then(() => loadData());
                     }
