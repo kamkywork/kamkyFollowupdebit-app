@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ระบบติดตามยอด - Collection System (V.70 Slip Attachment)</title>
+    <title>ระบบติดตามยอด - Collection System (V.Final)</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -131,7 +131,7 @@
 
     <script>
         // 🔴🔴 ใส่ลิงก์ API (Web App URL) ของคุณที่นี่ 🔴🔴
-        const API_URL = 'https://script.google.com/macros/s/AKfycbwHMnSZLFvvxnOsrU39o30uaORnfEK_uxhwNabVU0KtCPLC7047nUgq04-H-q38da6M/exec'; 
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzzK6g9nWe2AbKi-e8fj3HK6gxHT-fGPNKgh8KOipdr4as5hWINwjzEAJcE1vcGG9ZH/exec'; 
         
         let currentUser = null;
         let currentTrackingData = [], filteredData = [], globalSummary = {};
@@ -309,13 +309,17 @@
                         if (forceShowAll) {
                             groups.searchRes.push(item);
                         } else {
+                            // ✅ แก้ไข: ย้ายการตรวจสอบ Postpone ขึ้นมาก่อน Overdue
                             if (c.status === 'Pending_Approve' || c.status === 'รอตรวจสอบ' || c.status === 'รอปิดยอด') {
                                 groups.pending.push(item);
-                            } else if (c.overdue_count > 0) {
-                                groups.overdue.push(item);
-                            } else if (isPostponedToToday) { 
+                            } 
+                            else if (isPostponedToToday) { 
                                 groups.postpone.push(item);
-                            } else {
+                            }
+                            else if (c.overdue_count > 0) {
+                                groups.overdue.push(item);
+                            } 
+                            else {
                                 groups.normal.push(item); 
                             }
                         }
@@ -451,50 +455,47 @@
         }
 
         // ✅ แก้ไข: ไม่บังคับแนบสลิป (แนบหรือไม่ก็ได้)
-async function userReqPay(cNo) {
-    const { value: formValues } = await Swal.fire({
-        title: 'ยืนยันแจ้งชำระเงิน',
-        html: `
-            <div style="text-align:left; font-size:14px; margin-bottom:5px;">แนบสลิปการโอนเงิน (ถ้ามี):</div>
-            <input type="file" id="swal-input-file" class="swal2-input" accept="image/*" multiple style="width:80%; margin:0 auto; display:block;">
-            <input type="text" id="swal-input-note" class="swal2-input" placeholder="ระบุเพิ่มเติม (ถ้ามี)" style="margin-top:10px;">
-        `,
-        icon: 'info',
-        showCancelButton: true,
-        confirmButtonText: '✅ ยืนยันส่งข้อมูล',
-        cancelButtonText: 'ยกเลิก',
-        confirmButtonColor: '#27ae60',
-        preConfirm: () => {
-            const fileInput = document.getElementById('swal-input-file');
-            const noteInput = document.getElementById('swal-input-note').value;
-            
-            // 🔴 ลบส่วนตรวจสอบไฟล์ออก (Comment หรือลบทิ้ง)
-            // if (fileInput.files.length === 0) { Swal.showValidationMessage('กรุณาแนบสลิปการโอนเงินอย่างน้อย 1 ใบ'); return false; }
-            
-            return { files: fileInput.files, note: noteInput };
-        }
-    });
-
-    if (formValues) {
-        Swal.fire({ title: 'กำลังบันทึกข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-        try {
-            let slips = [];
-            // ระบบจะทำงานต่อได้แม้ไม่มีไฟล์ (Loop นี้จะไม่ทำงานถ้า files.length เป็น 0)
-            if (formValues.files.length > 0) {
-                for(let i=0; i<formValues.files.length; i++){
-                    const file = formValues.files[i];
-                    const base64Str = await toBase64(file);
-                    slips.push({ image: base64Str, name: `slip_${cNo}_${new Date().getTime()}_${i}.jpg`, mime: file.type });
+        async function userReqPay(cNo) {
+            const { value: formValues } = await Swal.fire({
+                title: 'ยืนยันแจ้งชำระเงิน',
+                html: `
+                    <div style="text-align:left; font-size:14px; margin-bottom:5px;">แนบสลิปการโอนเงิน (ถ้ามี):</div>
+                    <input type="file" id="swal-input-file" class="swal2-input" accept="image/*" multiple style="width:80%; margin:0 auto; display:block;">
+                    <input type="text" id="swal-input-note" class="swal2-input" placeholder="ระบุเพิ่มเติม (ถ้ามี)" style="margin-top:10px;">
+                `,
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonText: '✅ ยืนยันส่งข้อมูล',
+                cancelButtonText: 'ยกเลิก',
+                confirmButtonColor: '#27ae60',
+                preConfirm: () => {
+                    const fileInput = document.getElementById('swal-input-file');
+                    const noteInput = document.getElementById('swal-input-note').value;
+                    // ตัดบรรทัดตรวจสอบไฟล์ออก
+                    return { files: fileInput.files, note: noteInput };
                 }
-            }
-
-            await sendUserRequest('request_pay', cNo, { 
-                note: 'แจ้งชำระเงิน: ' + (formValues.note || '-'),
-                slips: slips 
             });
-        } catch (error) { Swal.fire('Error', 'เกิดข้อผิดพลาดในการเตรียมไฟล์', 'error'); }
-    }
-}
+
+            if (formValues) {
+                Swal.fire({ title: 'กำลังบันทึกข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                try {
+                    let slips = [];
+                    // ทำงานต่อได้แม้ไม่มีไฟล์
+                    if (formValues.files.length > 0) {
+                        for(let i=0; i<formValues.files.length; i++){
+                            const file = formValues.files[i];
+                            const base64Str = await toBase64(file);
+                            slips.push({ image: base64Str, name: `slip_${cNo}_${new Date().getTime()}_${i}.jpg`, mime: file.type });
+                        }
+                    }
+
+                    await sendUserRequest('request_pay', cNo, { 
+                        note: 'แจ้งชำระเงิน: ' + (formValues.note || '-'),
+                        slips: slips 
+                    });
+                } catch (error) { Swal.fire('Error', 'เกิดข้อผิดพลาดในการเตรียมไฟล์', 'error'); }
+            }
+        }
 
         async function userReqClose(cNo) {
             const { value: formValues } = await Swal.fire({
@@ -873,6 +874,44 @@ async function userReqPay(cNo) {
         
         function userProfile() { Swal.fire({ title: 'ข้อมูลผู้ใช้', html: `<b>${currentUser.name}</b><br>สถานะ: ${currentUser.role}`, showDenyButton: true, confirmButtonText: 'เปลี่ยนรหัสผ่าน', denyButtonText: 'ปิด' }).then(r => { if(r.isConfirmed) changePass(); }); }
         async function changePass() { const { value: p } = await Swal.fire({ title: 'ตั้งรหัสใหม่', input: 'password' }); if(p) { await fetch(API_URL, { method:'POST', body:JSON.stringify({action:'change_password', username:currentUser.username, new_pass:p}) }); Swal.fire('สำเร็จ'); } }
+
+        // ✅ ฟังก์ชันพิมพ์ใบรายชื่อติดตามหนี้
+        function printReport() {
+            if (!filteredData || filteredData.length === 0) { Swal.fire('ไม่มีข้อมูล', 'ไม่พบรายการที่จะพิมพ์ในหน้านี้', 'warning'); return; }
+            const dateRaw = document.getElementById('filterDate').value;
+            const dateStr = formatDateToThai(dateRaw);
+            const now = new Date();
+            const printTime = `${now.getHours()}:${("0" + now.getMinutes()).slice(-2)}`;
+
+            let html = `<html><head><title>ใบงานติดตามหนี้_${dateStr}</title>`;
+            html += `<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">`;
+            html += `<style>body { font-family: 'Sarabun', sans-serif; padding: 20px; color:#333; } h2 { text-align: center; margin-bottom: 5px; } .meta { text-align: center; font-size: 14px; margin-bottom: 20px; color: #555; } table { width: 100%; border-collapse: collapse; font-size: 12px; } th { background: #eee; padding: 8px; border: 1px solid #999; text-align: center; font-weight:bold; } td { padding: 6px; border: 1px solid #999; vertical-align: middle; } .text-right { text-align: right; } .text-center { text-align: center; } .badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; color: white; display: inline-block;} .bg-green { background: #27ae60; color:white; } .bg-red { background: #c0392b; color:white; } .bg-purple { background: #8e44ad; color:white; } .bg-orange { background: #f39c12; color:white; } @media print { button { display: none; } @page { size: A4 landscape; margin: 10mm; } } </style></head><body>`;
+            html += `<h2>📑 ใบงานติดตามหนี้ประจำวัน</h2>`;
+            html += `<div class="meta">วันที่เป้าหมาย: <b>${dateStr}</b> | พิมพ์เมื่อ: ${dateStr} เวลา ${printTime} น. | จำนวนรายการ: ${filteredData.length} รายการ</div>`;
+            html += `<table><thead><tr><th width="5%">#</th><th width="10%">เลขสัญญา</th><th width="15%">ชื่อลูกค้า</th><th width="10%">เบอร์โทร</th><th width="8%">งวดที่</th><th width="10%">ยอดชำระ</th><th width="12%">สถานะ</th><th width="30%">หมายเหตุ / ผลการติดตาม</th></tr></thead><tbody>`;
+
+            filteredData.forEach((item, index) => {
+                let statusBadge = "";
+                if (item.status === 'Pending_Approve' || item.status === 'รอตรวจสอบ') statusBadge = `<span class="badge bg-orange">รอตรวจสอบ</span>`;
+                else if (item.status === 'รอปิดยอด') statusBadge = `<span class="badge bg-orange">รอปิดยอด</span>`;
+                else if (item.postpone_date && item.postpone_date !== '-') statusBadge = `<span class="badge bg-purple">เลื่อน: ${item.postpone_date}</span>`;
+                else if (item.overdue_count > 0) statusBadge = `<span class="badge bg-red">ค้าง ${item.overdue_count} งวด</span>`;
+                else statusBadge = `<span class="badge bg-green">ปกติ</span>`;
+
+                let note = item.last_note || "";
+                note = note.replace(/(https?:\/\/[^\s]+)/g, '[รูป/ลิงก์]');
+
+                html += `<tr><td class="text-center">${index + 1}</td><td class="text-center">${item.c_no}</td><td>${item.b_name}</td><td class="text-center">${item.b_mobile}</td><td class="text-center">${item.installment_no}</td><td class="text-right">${parseFloat(item.finalAmount).toLocaleString()}</td><td class="text-center">${statusBadge}</td><td>${note}</td></tr>`;
+            });
+
+            html += `</tbody></table>`;
+            html += `<div style="margin-top:20px; font-size:12px; text-align:right;">ผู้พิมพ์รายงาน: ${currentUser ? currentUser.name : '-'}</div>`;
+            html += `<div style="text-align:center; margin-top:20px;"><button onclick="window.print()" style="padding:10px 20px; cursor:pointer;">🖨️ สั่งพิมพ์หน้านี้</button></div></body></html>`;
+
+            const win = window.open('', '_blank');
+            win.document.write(html);
+            win.document.close();
+        }
     </script>
 </body>
 </html>
