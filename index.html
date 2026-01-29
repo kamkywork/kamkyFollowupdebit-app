@@ -3,19 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ระบบติดตามยอด - Collection System (V.Final)</title>
+    <title>ระบบติดตามยอด - Collection System (V.Final Polygon)</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        /* CSS Style V.70 */
-        :root { --primary: #4361ee; --secondary: #3f37c9; --success: #2ec4b6; --warning: #ff9f1c; --danger: #e71d36; --dark: #2b2d42; --light: #f8f9fa; --gray: #8d99ae; --bg: #edf2f4; --card-radius: 16px; }
+        /* CSS Style V.74 - Polygon Status Dashboard */
+        :root { 
+            --primary: #4361ee;   
+            --secondary: #3f37c9; 
+            --success: #0abde3;   
+            --warning: #8e44ad;   
+            --danger: #e71d36;    
+            --dark: #2b2d42;      
+            --light: #f8f9fa; 
+            --gray: #8d99ae; 
+            --bg: #edf2f4; 
+            --card-radius: 16px; 
+        }
+        
         body { font-family: 'Sarabun', sans-serif; background: var(--bg); margin: 0; padding: 0; color: var(--dark); -webkit-font-smoothing: antialiased; }
         .header { background: #ffffff; padding: 15px 20px; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
         .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .header h2 { margin: 0; font-size: 20px; font-weight: 700; color: var(--dark); display: flex; align-items: center; gap: 8px; }
+        .header h2 { margin: 0; font-size: 20px; font-weight: 700; color: #4361ee; display: flex; align-items: center; gap: 8px; }
         .tools-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; align-items: center; flex-wrap: wrap; }
         .date-input, .search-input { border: 1px solid #e0e0e0; background: #f9f9f9; padding: 8px 12px; border-radius: 10px; font-family: 'Sarabun'; }
         .date-input { min-width: 130px; }
@@ -23,47 +35,102 @@
         .search-input { width: 120px; border: none; background: transparent; transition: width 0.3s; }
         .search-input:focus { width: 160px; outline: none; }
         .btn-search-icon { color: var(--primary); cursor: pointer; padding: 5px; }
+        
         .btn-icon, .btn-pill { border: none; border-radius: 10px; cursor: pointer; transition: 0.2s; color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .btn-icon { width: 38px; height: 38px; flex-shrink: 0; }
         .btn-pill { padding: 8px 15px; font-size: 13px; font-weight: 600; gap: 5px; border-radius: 20px; white-space: nowrap; }
-        .btn-refresh { background: var(--warning); } .btn-print { background: var(--dark); } .btn-excel { background: #20bf6b; } .btn-reset { background: var(--gray); }
-        .btn-daily { background: linear-gradient(135deg, #ff9f43, #ee5253); } .btn-monthly { background: linear-gradient(135deg, #54a0ff, #5f27cd); }
+        
+        .btn-refresh { background: var(--warning); }
+        .btn-print { background: #341f97; }
+        .btn-excel { background: #00d2d3; }
+        .btn-reset { background: var(--gray); }
+        .btn-daily { background: linear-gradient(135deg, #ff6b6b, #ee5253); }
+        .btn-monthly { background: linear-gradient(135deg, #54a0ff, #5f27cd); }
+        .btn-closed { background: #0abde3; }
         .btn-logout { background: #e74c3c; width: auto; padding: 0 12px; font-size: 12px; height: 38px; }
+        
         .perf-container { padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .stat-card { background: white; border-radius: var(--card-radius); padding: 20px; box-shadow: var(--shadow); }
-        .stat-header { display: flex; justify-content: space-between; margin-bottom: 15px; font-weight: 600; color: var(--gray); }
-        .chart-box { height: 140px; position: relative; margin-bottom: 15px; }
-        .stat-footer { display: flex; justify-content: space-between; background: #f8faff; padding: 10px 15px; border-radius: 12px; }
-        .stat-item h4 { margin: 0; font-size: 16px; color: var(--dark); } .stat-item span { font-size: 11px; color: var(--gray); }
+        .stat-card { background: white; border-radius: var(--card-radius); padding: 25px 20px; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+        
+        .stat-header { display: flex; align-items: center; margin-bottom: 10px; font-weight: 600; color: var(--gray); gap: 10px; }
+        .stat-header i { font-size: 1.5rem; }
+        .stat-body { text-align: center; padding: 10px 0; }
+        .big-number { font-size: 42px; font-weight: 800; margin: 0; line-height: 1; letter-spacing: -1px; }
+        .unit-text { font-size: 14px; color: var(--gray); font-weight: normal; margin-top: 5px; display: block; }
+
+        /* 🟢 New Polygon Grid Styles */
         .list-container { padding: 0 20px 80px 20px; max-width: 800px; margin: 0 auto; }
-        .accordion-group { margin-bottom: 20px; }
-        .accordion-header { background: white; padding: 12px 15px; border-radius: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: bold; color: var(--dark); box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 10px; transition: 0.2s; }
-        .accordion-header:hover { background: #f1f4f9; }
-        .accordion-content { display: none; animation: slideDown 0.3s ease-out; }
-        .accordion-content.active { display: block; }
-        .badge-count { background: var(--gray); color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; margin-left: auto; margin-right: 10px; }
-        .cust-card { border-radius: var(--card-radius); margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative; background: white; border-left: 5px solid #ddd; transition: 0.2s; }
-        .card-postpone { background: #fbf5ff; border-left-color: #9b59b6; } .card-overdue { background: #fff0f0; border-left-color: #e74c3c; } .card-pending-approve { background: #fffdf5; border-left-color: #ffca28; } .card-search-result { border-left-color: #4361ee; background: #f0f4ff; }
+        
+        .polygon-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px; margin-top: 10px; }
+        .polygon-card { 
+            padding: 20px; 
+            border-radius: 16px; 
+            color: white; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            text-align: center; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100px;
+            position: relative;
+            overflow: hidden;
+        }
+        .polygon-card:active { transform: scale(0.95); }
+        .polygon-card::after { content: 'คลิกเพื่อดู'; position: absolute; bottom: 5px; font-size: 10px; opacity: 0.7; }
+        
+        .poly-bg-pending { background: linear-gradient(135deg, #0abde3, #48dbfb); } /* Cyan */
+        .poly-bg-normal { background: linear-gradient(135deg, #3f37c9, #4361ee); } /* Blue */
+        .poly-bg-postpone { background: linear-gradient(135deg, #8e44ad, #9b59b6); } /* Purple */
+        .poly-bg-overdue { background: linear-gradient(135deg, #c0392b, #e74c3c); } /* Red */
+        .poly-bg-closed { background: linear-gradient(135deg, #27ae60, #2ecc71); }   /* Green-ish (for closed menu) */
+
+        .poly-count { font-size: 36px; font-weight: 800; line-height: 1; margin-bottom: 5px; }
+        .poly-title { font-size: 14px; font-weight: 600; }
+        .poly-icon { font-size: 24px; margin-bottom: 5px; opacity: 0.8; }
+
+        /* Card Styles (Same as before) */
+        .cust-card { border-radius: var(--card-radius); margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative; background: white; border-left: 5px solid #ddd; transition: 0.2s; animation: slideDown 0.3s ease-out; }
+        .card-postpone { background: #fbf5ff; border-left-color: #9b59b6; } 
+        .card-overdue { background: #fff0f0; border-left-color: #e74c3c; } 
+        .card-pending-approve { background: #fffdf5; border-left-color: #48dbfb; }
+        .card-search-result { border-left-color: #4361ee; background: #f0f4ff; }
+        
         .cust-header { padding: 15px 15px 5px 15px; display: flex; justify-content: space-between; align-items: flex-start; }
         .cust-info h3 { margin: 0 0 4px 0; font-size: 17px; color: var(--dark); }
         .cust-id { font-size: 11px; color: var(--gray); background: rgba(0,0,0,0.03); padding: 3px 8px; border-radius: 6px; display: inline-block; border: 1px solid rgba(0,0,0,0.05); }
+        
         .status-text { font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 5px; }
-        .text-green { color: #27ae60; } .text-orange { color: #f39c12; cursor: pointer; text-decoration: underline; } .text-purple { color: #8e44ad; } .text-red { color: #c0392b; }
+        .text-green { color: #0abde3; }  
+        .text-orange { color: #8e44ad; cursor: pointer; text-decoration: underline; }
+        .text-purple { color: #8e44ad; } 
+        .text-red { color: #c0392b; }
+        
         .btn-kebab { border: none; background: transparent; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--gray); }
         .cust-body { padding: 0 15px 15px 15px; display: flex; justify-content: space-between; align-items: flex-end; }
         .contact-line { font-size: 13px; color: #555; display: flex; align-items: center; gap: 6px; margin-top: 5px; }
         .amount-val { font-size: 22px; font-weight: 800; color: var(--dark); letter-spacing: -0.5px; }
         .cust-actions { padding: 10px 15px; background: rgba(255,255,255,0.5); border-top: 1px solid rgba(0,0,0,0.05); display: grid; gap: 10px; border-bottom-left-radius: var(--card-radius); border-bottom-right-radius: var(--card-radius); }
+        
         .btn-act, .user-checkbox-btn { border: none; padding: 10px; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; height: 42px; width: 100%; box-sizing: border-box; background: white; border: 1px solid #e0e0e0; color: #555; }
-        .btn-act-call { color: var(--secondary); } .btn-act-contract { background: #34495e; color: white; border:none; } .btn-act-info { background: #1abc9c; color: white; border:none; } .btn-act-pay { background: var(--dark); color: white; border:none; } .btn-act-postpone { color: #7e22ce; } .btn-disabled { background: #f1f1f1 !important; color: #ccc !important; border: 1px solid #eee !important; cursor: not-allowed !important; }
+        .btn-act-call { color: var(--secondary); } 
+        .btn-act-contract { background: #34495e; color: white; border:none; } 
+        .btn-act-info { background: #0abde3; color: white; border:none; } 
+        .btn-act-pay { background: #5f27cd; color: white; border:none; } 
+        .btn-act-postpone { color: #7e22ce; } 
+        .btn-disabled { background: #f1f1f1 !important; color: #ccc !important; border: 1px solid #eee !important; cursor: not-allowed !important; }
+        
         .grid-admin-actions { grid-template-columns: 1fr 1fr 1fr 1fr; } .grid-user-actions { grid-template-columns: 1fr 1fr 1fr 1fr; } 
+        .grid-closed-actions { grid-template-columns: 1fr 1fr; }
+
         @media (max-width: 600px) { .perf-container { grid-template-columns: 1fr; } .grid-admin-actions { grid-template-columns: 1fr 1fr; } .grid-user-actions { grid-template-columns: 1fr 1fr; } }
         .login-overlay { position: fixed; top: 0; left: 100%; width: 100%; height: 100%; background: rgba(43, 45, 66, 0.98); z-index: 9000; display: flex; align-items: center; justify-content: center; }
         .login-box { background: white; padding: 30px 40px; border-radius: 15px; width: 320px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .user-profile-badge { font-size: 11px; background: #eef3ff; color: var(--primary); padding: 3px 8px; border-radius: 15px; margin-left: 8px; cursor: pointer; display:inline-flex; align-items:center; gap:5px; }
         .loading-state { text-align: center; padding: 40px; color: var(--gray); } .hidden-elm { display: none !important; }
         @keyframes slideDown { from {opacity:0; transform:translateY(-10px);} to {opacity:1; transform:translateY(0);} }
-        /* Style for file input in SweetAlert */
         .swal2-file-input { font-size: 14px; margin-top: 10px; }
     </style>
 </head>
@@ -97,6 +164,7 @@
             <button class="btn-icon btn-refresh" onclick="loadData()"><i class="fas fa-sync-alt"></i></button>
             <button class="btn-pill btn-daily" onclick="showSummary('daily')"><i class="fas fa-bolt"></i> สรุปวัน</button>
             <button class="btn-pill btn-monthly" onclick="showSummary('monthly')"><i class="fas fa-calendar-check"></i> สรุปเดือน</button>
+            <button class="btn-pill btn-closed" onclick="showClosedContracts()"><i class="fas fa-check-double"></i> ปิด/ครบงวด</button>
             
             <button id="btnPrint" class="btn-icon btn-print" onclick="printReport()"><i class="fas fa-print"></i></button>
             <button id="btnExcel" class="btn-icon btn-excel" onclick="exportToExcel()"><i class="fas fa-file-excel"></i></button>
@@ -107,35 +175,44 @@
 
     <div class="perf-container" id="statContainer">
         <div class="stat-card">
-            <div class="stat-header"><span><i class="fas fa-sun" style="color:#ff9f43"></i> เป้าวันนี้ (Today)</span><span id="txtTodayPercent" style="color:var(--success)">0%</span></div>
-            <div class="chart-box"><canvas id="dailyChart"></canvas></div>
-            <div class="stat-footer">
-                <div class="stat-item"><span>เก็บได้</span><h4 id="txtTodayCollected">0</h4></div>
-                <div class="stat-item" style="text-align:right"><span>เหลือเก็บ</span><h4 id="txtTodayPending">0</h4></div>
+            <div class="stat-header">
+                <i class="fas fa-wallet" style="color:#ff6b6b"></i> 
+                <span>ยอดเก็บได้วันนี้ (Daily)</span>
+            </div>
+            <div class="stat-body">
+                <h1 id="txtTodayCollected" class="big-number" style="color:#4361ee;">0</h1>
+                <span class="unit-text">บาท</span>
             </div>
         </div>
         <div class="stat-card">
-            <div class="stat-header"><span><i class="fas fa-calendar" style="color:#54a0ff"></i> เป้าเดือนนี้ (Month)</span><span id="txtMonthPercent" style="color:var(--secondary)">0%</span></div>
-            <div class="chart-box"><canvas id="monthlyChart"></canvas></div>
-            <div class="stat-footer">
-                <div class="stat-item"><span>เก็บได้</span><h4 id="txtMonthCollected">0</h4></div>
-                <div class="stat-item" style="text-align:right"><span>เป้าหมาย</span><h4 id="txtMonthTarget">0</h4></div>
+            <div class="stat-header">
+                <i class="fas fa-sack-dollar" style="color:#54a0ff"></i> 
+                <span>ยอดสะสมเดือนนี้ (Monthly)</span>
+            </div>
+            <div class="stat-body">
+                <h1 id="txtMonthCollected" class="big-number" style="color:#3f37c9;">0</h1>
+                <span class="unit-text">บาท</span>
             </div>
         </div>
     </div>
 
     <div class="list-container">
         <div id="searchResultTitle" style="display:none; margin-bottom:10px; font-weight:bold; color:var(--primary);">ผลการค้นหา: <span id="txtSearchKeyword"></span> <button onclick="clearSearch()" style="background:#ddd; border:none; padding:3px 8px; border-radius:5px; cursor:pointer; font-size:12px;">ล้าง</button></div>
+        
+        <div id="polygonContainer" class="polygon-grid"></div>
+
+        <div id="contractListHeading" style="font-weight:bold; color:#555; margin: 15px 0 5px 0; display:none;">▼ รายการสัญญา</div>
         <div id="contractList"></div>
     </div>
 
     <script>
         // 🔴🔴 ใส่ลิงก์ API (Web App URL) ของคุณที่นี่ 🔴🔴
-        const API_URL = 'https://script.google.com/macros/s/AKfycbzrP1CQN-wrGXNb-3Tf2K6lKxnqhGjd2VVmn4qrGgmApKFEC-cyY6sfosCqjKsKk5PK/exec'; 
+        const API_URL = 'https://script.google.com/macros/s/AKfycbz0xIxWcSjcwfKpyAaAvYF0UeiF4Zn30qCo9d5FAbhW-Lae2RM_3YNZ25eD2HiDDgAI/exec'; 
         
         let currentUser = null;
         let currentTrackingData = [], filteredData = [], globalSummary = {};
-        let dailyChartInstance = null, monthlyChartInstance = null;
+        // เก็บกลุ่มข้อมูลไว้ใช้ตอนคลิก Polygon
+        let contractGroups = {}; 
         let isSearchMode = false;
 
         const toBase64 = file => new Promise((resolve, reject) => {
@@ -145,7 +222,6 @@
             reader.onerror = error => reject(error);
         });
 
-        // --- Helper: แปลง URL ในข้อความให้คลิกได้ (เพิ่มปุ่มดาวน์โหลด + แก้บั๊กวงเล็บ) ---
         function linkify(text) {
             if (!text) return '';
             const urlRegex = /(https?:\/\/[^\]\s]+)/g;
@@ -206,6 +282,8 @@
             clearSearchUI();
             const date = document.getElementById('filterDate').value;
             const container = document.getElementById('contractList');
+            // ล้าง Polygon
+            document.getElementById('polygonContainer').innerHTML = '';
             container.innerHTML = '<div class="loading-state">กำลังโหลดข้อมูล...</div>';
             try {
                 const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'get_tracking', date: date }) });
@@ -221,6 +299,7 @@
 
             isSearchMode = true;
             document.getElementById('statContainer').style.display = 'none';
+            document.getElementById('polygonContainer').style.display = 'none'; // ซ่อน Polygon ตอนค้นหา
             document.getElementById('searchResultTitle').style.display = 'block';
             document.getElementById('txtSearchKeyword').innerText = keyword;
             
@@ -230,15 +309,48 @@
             try {
                 const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'search_tracking', keyword: keyword }) });
                 const data = await response.json();
-                renderDashboard({ contracts: data.contracts, summary: {} }, null, true);
+                // โหมดค้นหา: แสดงรายการเลย ไม่ต้องใช้ Polygon
+                renderDirectList(data.contracts);
             } catch (e) { container.innerHTML = '<div class="loading-state" style="color:red">ไม่พบข้อมูล หรือ เกิดข้อผิดพลาด</div>'; }
         }
 
         function clearSearch() { document.getElementById('searchInput').value = ''; clearSearchUI(); loadData(); }
-        function clearSearchUI() { isSearchMode = false; document.getElementById('statContainer').style.display = 'grid'; document.getElementById('searchResultTitle').style.display = 'none'; }
         
+        function clearSearchUI() { 
+            isSearchMode = false; 
+            document.getElementById('statContainer').style.display = 'grid'; 
+            document.getElementById('polygonContainer').style.display = 'grid'; // แสดง Polygon กลับมา
+            document.getElementById('searchResultTitle').style.display = 'none'; 
+            document.getElementById('contractListHeading').style.display = 'none';
+        }
+        
+        // 🟢 ฟังก์ชันแสดงรายการปิด/ครบงวด
+        function showClosedContracts() {
+            if(!currentTrackingData || currentTrackingData.length === 0) {
+                alert('กำลังโหลดข้อมูล กรุณารอสักครู่...');
+                return;
+            }
+            
+            const closedList = currentTrackingData.filter(c => c.status === 'Paid' || c.status === 'Close');
+            
+            isSearchMode = true;
+            document.getElementById('statContainer').style.display = 'none';
+            document.getElementById('polygonContainer').style.display = 'none';
+            document.getElementById('searchResultTitle').style.display = 'block';
+            document.getElementById('txtSearchKeyword').innerText = `รายการปิดสัญญา/ครบงวด (${closedList.length} รายการ)`;
+            
+            // แสดงรายการเลย
+            renderDirectList(closedList);
+        }
+
+        // 🟢 ฟังก์ชัน Render แบบใหม่: สร้าง Polygon Dashboard
         function renderDashboard(data, selectedDate, forceShowAll) {
-            const container = document.getElementById('contractList'); container.innerHTML = "";
+            const container = document.getElementById('contractList'); 
+            const polyContainer = document.getElementById('polygonContainer');
+            container.innerHTML = "";
+            polyContainer.innerHTML = "";
+            document.getElementById('contractListHeading').style.display = 'none';
+
             const hidden = JSON.parse(localStorage.getItem('hiddenContracts') || '[]').map(String);
             
             const selectedDateThai = selectedDate ? formatDateToThai(selectedDate) : "";
@@ -251,135 +363,125 @@
             }
             const selectedMonthStr = `${selectedYearTH}-${selectedMonthOnly}`; 
             
-            let groups = { searchRes: [], overdue: [], pending: [], normal: [], postpone: [] };
+            // รีเซ็ตกลุ่ม
+            contractGroups = { pending: [], normal: [], postpone: [], overdue: [] };
 
-            let strictDailyTarget = 0;   
             let strictDailyCollected = 0;
-            let strictMonthlyTarget = 0; 
             let strictMonthlyCollected = 0;
+            
+            const isAdmin = (currentUser && currentUser.role === 'admin');
 
             if (data.contracts) {
                 data.contracts.forEach(c => {
                     const amount = parseFloat(c.amount || 0);
                     const isPaid = ['Paid', 'Close', 'รอปิดยอด'].includes(c.status);
-                    
                     const isPostponedToToday = (c.postpone_date === selectedDateThai);
                     const isDueToday = (c.due_date === selectedDateThai);
                     const hasPostpone = (c.postpone_date && c.postpone_date !== "-" && c.postpone_date !== "");
-                    
-                    let isTargetToday = false;
-                    if (isPostponedToToday) isTargetToday = true;
-                    else if (isDueToday && !hasPostpone) isTargetToday = true;
+                    const isPendingStatus = ['Pending_Approve', 'รอตรวจสอบ', 'รอปิดยอด'].includes(c.status);
 
-                    if (isTargetToday) {
-                        strictDailyTarget += amount;
-                        if (isPaid) strictDailyCollected += amount;
-                    }
+                    let isTargetToday = (isPostponedToToday) || (isDueToday && !hasPostpone);
 
+                    // คำนวณยอดเงิน (ยังคงใช้ Logic เดิม)
+                    if (isTargetToday && isPaid) strictDailyCollected += amount;
                     if (c.due_date) {
                         const parts = c.due_date.split('/'); 
                         if(parts.length === 3) {
                             const cMonthStr = `${parts[2]}-${parts[1]}`;
-                            if (cMonthStr === selectedMonthStr) {
-                                strictMonthlyTarget += amount;
-                                if (isPaid) strictMonthlyCollected += amount;
-                            }
+                            if (cMonthStr === selectedMonthStr && isPaid) strictMonthlyCollected += amount;
                         }
                     }
 
-                    if (!forceShowAll && hidden.includes(String(c.c_no))) return;
+                    if (hidden.includes(String(c.c_no))) return;
                     
-                    let shouldShow = forceShowAll ? true : (isTargetToday || c.overdue_count > 0 || ['Pending_Approve', 'รอตรวจสอบ', 'รอปิดยอด'].includes(c.status));
+                    // 🟢 Logic การจัดกลุ่ม (ไม่รวมรายการที่ปิดแล้ว)
+                    if (isPaid) return; // ข้ามรายการปิดแล้ว (ไปอยู่ปุ่มเขียวแทน)
 
-                    if (shouldShow) {
-                        let amt = parseFloat(c.amount) * (c.overdue_count > 1 ? c.overdue_count : 1);
-                        
-                        if (c.original_due_date !== selectedDateThai && c.postpone_date === selectedDateThai) {
-                            c.worksheetStatus = `เลื่อนมาจาก ${c.original_due_date}`;
+                    // คำนวณยอดที่แสดง
+                    let amt = parseFloat(c.amount) * (c.overdue_count > 1 ? c.overdue_count : 1);
+                    
+                    // กำหนดข้อความสถานะ
+                    if (c.original_due_date !== selectedDateThai && c.postpone_date === selectedDateThai) {
+                        c.worksheetStatus = `เลื่อนมาจาก ${c.original_due_date}`;
+                    } else {
+                        if (isPendingStatus) {
+                            c.worksheetStatus = c.status === 'รอปิดยอด' ? 'รอปิดยอด' : 'รอตรวจสอบ';
                         } else {
-                            if (['Pending_Approve', 'รอตรวจสอบ', 'รอปิดยอด'].includes(c.status)) {
-                                c.worksheetStatus = c.status === 'รอปิดยอด' ? 'รอปิดยอด' : 'รอตรวจสอบ';
-                            } else {
-                                c.worksheetStatus = c.overdue_count > 0 ? 'ค้างชำระ' : 'ปกติ';
-                            }
+                            c.worksheetStatus = c.overdue_count > 0 ? 'ค้างชำระ' : 'ปกติ';
                         }
+                    }
 
-                        let item = { ...c, finalAmount: amt, hasPostpone: hasPostpone };
-                        
-                        if (forceShowAll) {
-                            groups.searchRes.push(item);
-                        } else {
-                            // ✅ แก้ไข: ย้ายการตรวจสอบ Postpone ขึ้นมาก่อน Overdue
-                            if (c.status === 'Pending_Approve' || c.status === 'รอตรวจสอบ' || c.status === 'รอปิดยอด') {
-                                groups.pending.push(item);
-                            } 
-                            else if (isPostponedToToday) { 
-                                groups.postpone.push(item);
-                            }
-                            else if (c.overdue_count > 0) {
-                                groups.overdue.push(item);
-                            } 
-                            else {
-                                groups.normal.push(item); 
-                            }
-                        }
+                    let item = { ...c, finalAmount: amt, hasPostpone: hasPostpone };
+
+                    // ใส่เข้ากลุ่ม
+                    if (isPendingStatus) {
+                        // User ไม่เห็น Pending ของตัวเอง
+                        if (isAdmin || !isPendingStatus) contractGroups.pending.push(item);
+                    } 
+                    else if (isPostponedToToday) { 
+                        contractGroups.postpone.push(item);
+                    }
+                    else if (c.overdue_count > 0) {
+                        contractGroups.overdue.push(item);
+                    } 
+                    else if (isTargetToday) {
+                        contractGroups.normal.push(item); 
                     }
                 });
             }
 
-            if (!forceShowAll) {
-                updateCharts(strictDailyTarget, strictDailyCollected, strictMonthlyTarget, strictMonthlyCollected);
-            }
+            updateCharts(0, strictDailyCollected, 0, strictMonthlyCollected);
 
-            filteredData = [];
-            if(forceShowAll) {
-                 filteredData = [...groups.searchRes];
-            } else {
-                 filteredData = [...groups.pending, ...groups.normal, ...groups.postpone, ...groups.overdue];
+            // 🟢 สร้าง Polygon Cards
+            // 1. Pending
+            if (contractGroups.pending.length > 0 && isAdmin) { // เฉพาะ Admin ที่เห็น Pending Box
+                polyContainer.innerHTML += createPolygonHtml('pending', 'รอตรวจสอบ', contractGroups.pending.length, 'poly-bg-pending', 'fas fa-clock');
             }
+            // 2. Normal (Today)
+            polyContainer.innerHTML += createPolygonHtml('normal', 'ปกติ (วันนี้)', contractGroups.normal.length, 'poly-bg-normal', 'fas fa-calendar-check');
+            // 3. Postpone
+            polyContainer.innerHTML += createPolygonHtml('postpone', 'เลื่อนนัดมาวันนี้', contractGroups.postpone.length, 'poly-bg-postpone', 'fas fa-history');
+            // 4. Overdue
+            polyContainer.innerHTML += createPolygonHtml('overdue', 'เกินกำหนด', contractGroups.overdue.length, 'poly-bg-overdue', 'fas fa-exclamation-circle');
 
-            if (filteredData.length === 0) { container.innerHTML = '<div class="loading-state">ไม่พบรายการต้องติดตามในวันนี้</div>'; return; }
-
-            if (forceShowAll) {
-                renderAccordionSection(container, '📄 ผลการค้นหา', groups.searchRes, 'open');
-            } else {
-                renderAccordionSection(container, '⏳ รอดำเนินการ (Pending)', groups.pending, 'open');
-                renderAccordionSection(container, '📅 ปกติ: ครบกำหนดวันนี้ (Today)', groups.normal, 'open');
-                renderAccordionSection(container, '⏰ นัดหมายเลื่อนมาวันนี้ (Postponed)', groups.postpone, 'open');
-                renderAccordionSection(container, '❗ เกินกำหนดชำระ (Overdue)', groups.overdue, 'open');
-            }
+            container.innerHTML = `<div class="loading-state" style="padding:20px;">👈 คลิกที่กล่องสถานะด้านบนเพื่อดูรายการ</div>`;
         }
 
-        function renderAccordionSection(container, title, items, defaultState) {
-            if(items.length === 0) return;
-            const id = 'acc_' + Math.random().toString(36).substr(2, 9);
-            const htmlItems = items.map(c => createCardHtml(c)).join('');
-            
-            container.innerHTML += `
-            <div class="accordion-group">
-                <div class="accordion-header" onclick="toggleAccordion('${id}')">
-                    <span>${title}</span>
-                    <div style="display:flex; align-items:center;">
-                        <span class="badge-count">${items.length}</span>
-                        <i class="fas fa-chevron-down" id="icon_${id}"></i>
-                    </div>
-                </div>
-                <div id="${id}" class="accordion-content ${defaultState==='open'?'active':''}">
-                    ${htmlItems}
-                </div>
+        // ฟังก์ชันสร้าง HTML ของ Polygon Box
+        function createPolygonHtml(groupKey, title, count, bgClass, iconClass) {
+            return `
+            <div class="polygon-card ${bgClass}" onclick="showGroupList('${groupKey}', '${title}')">
+                <i class="${iconClass} poly-icon"></i>
+                <div class="poly-count">${count}</div>
+                <div class="poly-title">${title}</div>
             </div>`;
         }
 
-        function toggleAccordion(id) {
-            const content = document.getElementById(id);
-            const icon = document.getElementById('icon_' + id);
-            if(content.classList.contains('active')) {
-                content.classList.remove('active');
-                icon.style.transform = 'rotate(0deg)';
-            } else {
-                content.classList.add('active');
-                icon.style.transform = 'rotate(180deg)';
+        // 🟢 ฟังก์ชันแสดงรายการเมื่อคลิก Polygon
+        function showGroupList(groupKey, title) {
+            const list = contractGroups[groupKey];
+            const container = document.getElementById('contractList');
+            const heading = document.getElementById('contractListHeading');
+            
+            heading.style.display = 'block';
+            heading.innerText = `▼ รายการ: ${title} (${list.length})`;
+            
+            renderDirectList(list);
+            
+            // Scroll ลงมาที่รายการเล็กน้อย
+            setTimeout(() => {
+                heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        }
+
+        // ฟังก์ชัน Render รายการแบบตรงๆ (ใช้ทั้ง Search, Closed, และ Polygon Click)
+        function renderDirectList(items) {
+            const container = document.getElementById('contractList');
+            if (!items || items.length === 0) {
+                container.innerHTML = '<div class="loading-state">ไม่พบรายการ</div>';
+                return;
             }
+            container.innerHTML = items.map(c => createCardHtml(c)).join('');
         }
 
         function createCardHtml(c) {
@@ -388,6 +490,9 @@
             let statusHtml = `<span class="status-text text-green"><i class="fas fa-check-circle"></i> ปกติ</span>`;
             let hasPaymentNote = c.last_note && c.last_note.includes('แจ้งชำระ');
             
+            // ตรวจสอบสถานะว่าปิดบัญชีหรือยัง
+            const isClosed = (c.status === 'Paid' || c.status === 'Close');
+
             if (c.status === 'Pending_Approve' || c.status === 'รอตรวจสอบ') { 
                 cardClass = "card-pending-approve"; 
                 if(isAdmin) statusHtml = `<span class="status-text text-orange" onclick="adminApprove('${c.c_no}', ${c.row_index}, '${c.request_date}', '${c.last_note || ''}', 'postpone')">⏳ รอตรวจสอบ (กด)</span>`;
@@ -400,7 +505,7 @@
             }
             else if (c.hasPostpone) { cardClass = "card-postpone"; statusHtml = `<span class="status-text text-purple">⏰ เลื่อน: ${c.postpone_date}</span>`; } 
             else if (c.overdue_count > 0) { cardClass = "card-overdue"; statusHtml = `<span class="status-text text-red">❗ ค้าง ${c.overdue_count} งวด</span>`; }
-            else if (c.status === 'Close' || c.status === 'Paid') { statusHtml = `<span class="status-text text-green">✅ ปิดบัญชีแล้ว (${c.last_payment_date})</span>`; }
+            else if (isClosed) { statusHtml = `<span class="status-text text-green">✅ ปิดบัญชีแล้ว (${c.last_payment_date})</span>`; }
 
             if (hasPaymentNote) {
                 let noteContent = linkify(c.last_note);
@@ -416,34 +521,44 @@
                 : `<button class="btn-act btn-disabled" disabled><i class="fas fa-address-card"></i> ข้อมูลเพิ่มเติม</button>`;
             const contractBtn = `<button class="btn-act btn-act-contract" onclick="openContractPopup('${c.c_no}')"><i class="fas fa-file-contract"></i> สัญญา</button>`;
 
-            if (isAdmin) {
-                gridClass = 'grid-admin-actions';
+            // 🟢 แก้ไข: ถ้าปิดบัญชีแล้ว ให้แสดงแค่ 2 ปุ่ม
+            if (isClosed) {
+                gridClass = 'grid-closed-actions'; // ใช้ Grid แบบ 2 ช่อง
                 actionButtonsHtml = `
-                    <a href="tel:${c.b_mobile}" class="btn-act btn-act-call"><i class="fas fa-phone"></i> โทร</a>
                     ${infoBtn}
                     ${contractBtn}
-                    <button class="btn-act btn-act-pay" onclick="openPay('${c.c_no}')"><i class="fas fa-wallet"></i> จ่าย</button>
-                    <button class="btn-act btn-act-postpone" style="grid-column: 1 / -1;" onclick="openPostpone(${c.row_index},'${c.b_name}', '${c.postpone_date||''}')"><i class="fas fa-calendar-check"></i> นัดหมาย</button>
                 `;
             } else {
-                gridClass = 'grid-user-actions';
-                const isPending = (c.status === 'Pending_Approve' || c.status === 'รอตรวจสอบ' || c.status === 'รอปิดยอด');
-                const payBtn = isPending 
-                    ? `<button class="user-checkbox-btn btn-disabled" disabled><i class="fas fa-clock"></i> รออนุมัติ</button>`
-                    : `<button class="user-checkbox-btn" onclick="userReqPay('${c.c_no}')"><i class="far fa-check-square"></i> แจ้งชำระ</button>`;
-                const closeBtn = isPending
-                    ? `<button class="user-checkbox-btn btn-disabled" disabled><i class="fas fa-flag-checkered"></i> ปิดยอด</button>`
-                    : `<button class="user-checkbox-btn" onclick="userReqClose('${c.c_no}')" style="color:#c0392b;"><i class="fas fa-flag-checkered"></i> ขอปิดยอด</button>`;
+                // ถ้ายังไม่ปิดบัญชี ให้แสดงปุ่มปกติ
+                if (isAdmin) {
+                    gridClass = 'grid-admin-actions';
+                    actionButtonsHtml = `
+                        <a href="tel:${c.b_mobile}" class="btn-act btn-act-call"><i class="fas fa-phone"></i> โทร</a>
+                        ${infoBtn}
+                        ${contractBtn}
+                        <button class="btn-act btn-act-pay" onclick="openPay('${c.c_no}')"><i class="fas fa-wallet"></i> จ่าย</button>
+                        <button class="btn-act btn-act-postpone" style="grid-column: 1 / -1;" onclick="openPostpone(${c.row_index},'${c.b_name}', '${c.postpone_date||''}')"><i class="fas fa-calendar-check"></i> นัดหมาย</button>
+                    `;
+                } else {
+                    gridClass = 'grid-user-actions';
+                    const isPending = (c.status === 'Pending_Approve' || c.status === 'รอตรวจสอบ' || c.status === 'รอปิดยอด');
+                    const payBtn = isPending 
+                        ? `<button class="user-checkbox-btn btn-disabled" disabled><i class="fas fa-clock"></i> รออนุมัติ</button>`
+                        : `<button class="user-checkbox-btn" onclick="userReqPay('${c.c_no}')"><i class="far fa-check-square"></i> แจ้งชำระ</button>`;
+                    const closeBtn = isPending
+                        ? `<button class="user-checkbox-btn btn-disabled" disabled><i class="fas fa-flag-checkered"></i> ปิดยอด</button>`
+                        : `<button class="user-checkbox-btn" onclick="userReqClose('${c.c_no}')" style="color:#c0392b;"><i class="fas fa-flag-checkered"></i> ขอปิดยอด</button>`;
 
-                actionButtonsHtml = `
-                    <a href="tel:${c.b_mobile}" class="btn-act btn-act-call"><i class="fas fa-phone"></i> โทร</a>
-                    ${infoBtn}
-                    ${contractBtn}
-                    ${payBtn}
-                    <button class="user-checkbox-btn" onclick="userReqPostpone('${c.c_no}')"><i class="far fa-clock"></i> เลื่อนนัด</button>
-                    ${closeBtn}
-                    <button class="user-checkbox-btn" style="grid-column: 1 / -1;" onclick="userAddNote('${c.c_no}')"><i class="fas fa-pen"></i> หมายเหตุ</button>
-                `;
+                    actionButtonsHtml = `
+                        <a href="tel:${c.b_mobile}" class="btn-act btn-act-call"><i class="fas fa-phone"></i> โทร</a>
+                        ${infoBtn}
+                        ${contractBtn}
+                        ${payBtn}
+                        <button class="user-checkbox-btn" onclick="userReqPostpone('${c.c_no}')"><i class="far fa-clock"></i> เลื่อนนัด</button>
+                        ${closeBtn}
+                        <button class="user-checkbox-btn" style="grid-column: 1 / -1;" onclick="userAddNote('${c.c_no}')"><i class="fas fa-pen"></i> หมายเหตุ</button>
+                    `;
+                }
             }
 
             return `
@@ -454,7 +569,6 @@
             </div>`;
         }
 
-        // ✅ แก้ไข: ไม่บังคับแนบสลิป (แนบหรือไม่ก็ได้)
         async function userReqPay(cNo) {
             const { value: formValues } = await Swal.fire({
                 title: 'ยืนยันแจ้งชำระเงิน',
@@ -471,7 +585,6 @@
                 preConfirm: () => {
                     const fileInput = document.getElementById('swal-input-file');
                     const noteInput = document.getElementById('swal-input-note').value;
-                    // ตัดบรรทัดตรวจสอบไฟล์ออก
                     return { files: fileInput.files, note: noteInput };
                 }
             });
@@ -480,7 +593,6 @@
                 Swal.fire({ title: 'กำลังบันทึกข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
                 try {
                     let slips = [];
-                    // ทำงานต่อได้แม้ไม่มีไฟล์
                     if (formValues.files.length > 0) {
                         for(let i=0; i<formValues.files.length; i++){
                             const file = formValues.files[i];
@@ -540,8 +652,6 @@
             } catch(e) { Swal.fire('Error', 'ส่งข้อมูลล้มเหลว', 'error'); }
         }
 
-        // ✅ Admin: ปรับปรุงใหม่ เพิ่มการเด้งไปหน้าใบเสร็จหลังอนุมัติ
-        // 🔴 ปรับปรุง: ใช้ URL โดยตรง
         async function adminApprove(cNo, rowIndex, reqDate, details, type) {
             let title = type === 'close' ? 'อนุมัติปิดยอดบัญชี (Close)' : 'อนุมัติรายการ';
             let confirmBtn = type === 'close' ? '🏁 ยืนยันปิดยอด' : '✅ ยืนยันอนุมัติ';
@@ -558,14 +668,12 @@
                 cancelButtonText: 'ยกเลิก' 
             }).then(async (result) => { 
                 if (result.isConfirmed) { 
-                    // 1. ทำการอนุมัติในระบบ
                     Swal.showLoading(); 
                     if (type === 'postpone' && reqDate && reqDate !== '-') { 
                         await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'postpone', row_index: rowIndex, new_date: reqDate }) }); 
                     } 
                     await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: actionType, row_index: rowIndex }) }); 
                     
-                    // 2. เมื่อบันทึกสำเร็จ ถาม Admin ว่าจะไปออกใบเสร็จเลยไหม
                     Swal.fire({
                         title: '✅ อนุมัติสำเร็จ!',
                         text: "ต้องการออกใบเสร็จรับเงินเดี๋ยวนี้เลยหรือไม่?",
@@ -576,14 +684,12 @@
                         confirmButtonColor: '#2c3e50'
                     }).then((r) => {
                         if (r.isConfirmed) {
-                            // เปิดหน้า Bill พร้อมส่งเลขสัญญาไปด้วย
                             window.open(`https://kamkywork.github.io/kamkybill-app/?ref=${encodeURIComponent(cNo)}`, '_blank');
                         }
-                        loadData(); // รีโหลดข้อมูลในหน้าติดตาม
+                        loadData(); 
                     });
 
                 } else if (result.isDenied) {
-                    // กรณีตีกลับ (เหมือนเดิม)
                     const { value: reason } = await Swal.fire({
                         title: 'ระบุเหตุผลที่ตีกลับ',
                         input: 'text',
@@ -606,7 +712,6 @@
 
         function showSummary(type) { Swal.fire({ title: `สรุป${type==='daily'?'รายวัน':'รายเดือน'}`, showCancelButton:true, confirmButtonText:'เปิดรายงาน' }).then(r=>{if(r.isConfirmed) printSummaryReport(type)}); }
 
-        // ✅ ปรับปรุงใหม่: รายงานสรุปรูปแบบการ์ด 4 สี (ตามรูปภาพแนบ)
         function printSummaryReport(type) {
             const rawDate = document.getElementById('filterDate').value;
             const dateStr = formatDateToThai(rawDate);
@@ -619,7 +724,6 @@
             let listPaid = [], listDue = [], listOverdue = [], listOldOverdue = [];
             let totalOldOverdue = 0;
 
-            // --- 1. คำนวณข้อมูล (Logic เดิม) ---
             currentTrackingData.forEach(c => {
                 const amount = parseFloat(c.amount);
                 let cDateParts = c.due_date.split('/');
@@ -627,7 +731,6 @@
                 
                 let isPaid = ['Paid', 'Close', 'รอปิดยอด'].includes(c.status);
                 
-                // แยกยอดค้างเก่า (Old Overdue)
                 if (!isPaid && cMonthStr < currentMonthStr && cMonthStr !== '') {
                     listOldOverdue.push(c);
                     totalOldOverdue += amount;
@@ -641,7 +744,6 @@
                 let includeInReport = false;
                 if (type === 'daily') {
                     if (isTargetDay) includeInReport = true;
-                    // รายวันเราจะไม่เอา listOldOverdue มาปนในตาราง main แต่จะโชว์ยอดรวมการ์ดแดง
                 } else {
                     if (cMonthStr === currentMonthStr) includeInReport = true;
                     if (!isPaid && cMonthStr < currentMonthStr) includeInReport = true;
@@ -654,7 +756,6 @@
                 }
             });
 
-            // คำนวณยอดตัวเลขสำหรับการ์ด
             let card1_Label, card1_Val, card1_Color = "bg-red";
             let card2_Label, card2_Val, card2_Color = "bg-blue";
             let card3_Label, card3_Val, card3_Color = "bg-green";
@@ -662,7 +763,6 @@
             let percent = 0;
 
             if (type === 'monthly') {
-                // คำนวณยอดรวมรายเดือน (จาก Dashboard เดิม)
                 let totalMonthTarget = 0, totalMonthCollected = 0;
                 currentTrackingData.forEach(c => {
                     let cDateParts = c.due_date.split('/');
@@ -682,21 +782,17 @@
                 card4_Label = "เหลือเก็บ"; card4_Val = Math.max(0, remaining);
 
             } else {
-                // รายวัน
-                let todayTarget = listPaid.reduce((a,b)=>a+parseFloat(b.amount),0) + listDue.reduce((a,b)=>a+parseFloat(b.amount),0) + listOverdue.reduce((a,b)=>a+parseFloat(b.amount),0); // คิดแบบรวมรายการที่แสดง
+                let todayTarget = listPaid.reduce((a,b)=>a+parseFloat(b.amount),0) + listDue.reduce((a,b)=>a+parseFloat(b.amount),0) + listOverdue.reduce((a,b)=>a+parseFloat(b.amount),0); 
                 let todayCollected = listPaid.reduce((a,b)=>a+(parseFloat(b.amount_paid||b.amount)),0);
                 let todayRemaining = Math.max(0, todayTarget - todayCollected);
                 percent = todayTarget > 0 ? ((todayCollected/todayTarget)*100).toFixed(1) : 0;
 
-                // เพื่อความสวยงามในรายวัน ให้การ์ดแรกเป็นค้างสะสม หรือ เป้าวันนี้ก็ได้
-                // แต่เพื่อให้เหมือนรูปที่แนบ (4 ช่อง) จะใช้ ค้างสะสม เป็นช่องแรกเหมือนกัน
                 card1_Label = "ค้างสะสม (เก่า)"; card1_Val = totalOldOverdue;
                 card2_Label = "เป้าวันนี้"; card2_Val = todayTarget;
                 card3_Label = "เก็บได้วันนี้"; card3_Val = todayCollected;
                 card4_Label = "เหลือเก็บวันนี้"; card4_Val = todayRemaining;
             }
 
-            // --- 2. ส่วนสร้าง HTML และ CSS (Design ตามรูป) ---
             const now = new Date();
             const fileNameDate = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate()}`;
             const fileName = `Report_${type}_${dateStr.replace(/\//g,'-')}_${fileNameDate}`;
@@ -706,27 +802,20 @@
                     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700;800&display=swap');
                     body { font-family: 'Sarabun', sans-serif; padding: 20px; background: #f8f9fa; color: #333; }
                     .report-box { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); max-width: 900px; margin: 0 auto; }
-                    
-                    /* Header Style */
                     .header-title { text-align: center; margin-bottom: 30px; }
                     .header-title h2 { margin: 0; font-size: 22px; color: #2b2d42; font-weight: 800; display:flex; align-items:center; justify-content:center; gap:8px; }
                     .header-title span { font-size: 14px; color: #555; margin-top: 5px; display:block; }
-                    
-                    /* Card Grid Style (เหมือนรูปที่แนบ) */
                     .summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px; margin-bottom: 20px; }
                     .card { border-radius: 10px; padding: 20px 10px; text-align: center; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
                     .card h3 { margin: 0 0 5px 0; font-size: 14px; font-weight: 500; opacity: 0.95; }
                     .card h2 { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
-                    
-                    /* สีการ์ด */
-                    .bg-red { background-color: #e74c3c; }    /* สีแดง (ค้างยกมา) */
-                    .bg-blue { background-color: #4361ee; }   /* สีน้ำเงิน (เป้า) */
-                    .bg-green { background-color: #27ae60; }  /* สีเขียว (เก็บได้) */
-                    .bg-orange { background-color: #f39c12; } /* สีส้ม (เหลือเก็บ) */
+                    .bg-red { background-color: #e74c3c; }    
+                    .bg-blue { background-color: #4361ee; }   
+                    /* 🔴 ปรับสี Badge ในหน้า Print (No Orange/Green) */
+                    .bg-green { background-color: #0abde3; }  /* ฟ้าคราม */
+                    .bg-orange { background-color: #8e44ad; } /* ม่วง */
 
                     .percent-text { text-align: center; color: #4361ee; font-weight: 700; font-size: 14px; margin-bottom: 30px; }
-
-                    /* Table Style */
                     table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; margin-bottom: 20px; }
                     th { background: #eee; padding: 8px; border: 1px solid #ddd; text-align: left; color: #333; font-weight: 700; }
                     td { padding: 8px; border: 1px solid #ddd; vertical-align: middle; }
@@ -740,7 +829,6 @@
                     .summary-table td { font-weight: bold; }
                     .text-right { text-align: right; }
                     .text-center { text-align: center; }
-                    
                     .hide-on-print { margin-top:20px; text-align:center; display:flex; justify-content:center; gap:10px; }
                     @media print { .hide-on-print { display: none; } body { background: white; -webkit-print-color-adjust: exact; } .report-box { box-shadow: none; padding:0; } }
                 </style>`;
@@ -816,7 +904,7 @@
         }
 
         async function openContractPopup(cNo) {
-            Swal.fire({ title: 'กำลังโหลดรูป...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            Swal.fire({ title: 'กำลังโหลด...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
             try {
                 const res = await fetch(API_URL, { 
                     method: 'POST', 
@@ -825,16 +913,23 @@
                 const d = await res.json();
                 
                 if(d.status === 'success') {
-                    const imgUrl = d.url + "&t=" + new Date().getTime();
+                    let fileId = "";
+                    if(d.url.includes("id=")) {
+                        fileId = d.url.split('id=')[1].split('&')[0];
+                    }
                     
-                    Swal.fire({ 
-                        imageUrl: imgUrl, 
-                        width: '95%', 
-                        imageAlt: 'Contract Image',
-                        showCloseButton: true, 
-                        confirmButtonText: 'ปิด',
-                        footer: `<a href="${d.url}" target="_blank" style="color:#4361ee; font-weight:bold; text-decoration:underline;">หากรูปไม่แสดง คลิกเพื่อเปิดในหน้าต่างใหม่</a>`
-                    });
+                    if(fileId) {
+                        let previewUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+                        Swal.fire({ 
+                            html: `<div style="position:relative; padding-bottom:10px;"><iframe src="${previewUrl}" width="100%" height="450px" style="border:none; border-radius:8px;"></iframe></div>`,
+                            width: '600px', 
+                            showCloseButton: true, 
+                            confirmButtonText: 'ปิด',
+                            footer: `<a href="${d.url}" target="_blank" style="color:#4361ee; font-weight:bold; text-decoration:underline;">หากรูปไม่ขึ้น คลิกที่นี่เพื่อเปิดแอป Drive</a>`
+                        });
+                    } else {
+                         Swal.fire({ imageUrl: d.url, width: '95%', confirmButtonText: 'ปิด' });
+                    }
                 } else {
                     Swal.fire({ icon: 'warning', title: 'ไม่พบไฟล์รูปสัญญา' });
                 }
@@ -849,7 +944,23 @@
             try {
                 const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'get_contract_image', c_no: cNo, type: 'contact_aw' }) }); 
                 const d = await res.json(); 
-                if(d.status==='success') Swal.fire({ imageUrl: d.url, width: '95%', showCloseButton: true, confirmButtonText: 'ปิด' }); 
+                if(d.status==='success') {
+                    let fileId = "";
+                    if(d.url.includes("id=")) {
+                         fileId = d.url.split('id=')[1].split('&')[0];
+                    }
+                    if(fileId) {
+                        let previewUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+                        Swal.fire({ 
+                            html: `<iframe src="${previewUrl}" width="100%" height="450px" style="border:none; border-radius:8px;"></iframe>`,
+                            width: '600px', 
+                            showCloseButton: true, 
+                            confirmButtonText: 'ปิด' 
+                        }); 
+                    } else {
+                        Swal.fire({ imageUrl: d.url, width: '95%', confirmButtonText: 'ปิด' });
+                    }
+                }
                 else Swal.fire({ icon: 'warning', title: 'ไม่พบข้อมูลเพิ่มเติม (AW)' }); 
             } catch(e) { Swal.fire('Error', 'ผิดพลาด'); }
         }
@@ -862,26 +973,8 @@
         }
         
         function updateCharts(dailyTarget, dailyCollected, monthlyTarget, monthlyCollected) {
-            const remainingDaily = Math.max(0, dailyTarget - dailyCollected);
             document.getElementById('txtTodayCollected').innerText = dailyCollected.toLocaleString();
-            document.getElementById('txtTodayPending').innerText = remainingDaily.toLocaleString();
-            document.getElementById('txtTodayPercent').innerText = dailyTarget > 0 ? Math.round((dailyCollected / dailyTarget) * 100) + '%' : '0%';
-            updateChart('dailyChart', 'daily', dailyCollected, remainingDaily);
-
-            const remainingMonth = Math.max(0, monthlyTarget - monthlyCollected);
             document.getElementById('txtMonthCollected').innerText = monthlyCollected.toLocaleString();
-            document.getElementById('txtMonthTarget').innerText = monthlyTarget.toLocaleString();
-            document.getElementById('txtMonthPercent').innerText = monthlyTarget > 0 ? Math.round((monthlyCollected / monthlyTarget) * 100) + '%' : '0%';
-            updateChart('monthlyChart', 'monthly', monthlyCollected, remainingMonth);
-        }
-
-        function updateChart(id, type, val1, val2) { 
-            const ctx = document.getElementById(id).getContext('2d'); 
-            let colors = type === 'daily' ? ['#2ec4b6', '#e71d36'] : ['#4361ee', '#e71d36']; 
-            if(val2 === 0) colors = type === 'daily' ? ['#2ec4b6', '#edf2f4'] : ['#4361ee', '#edf2f4'];
-            let config = { type: 'doughnut', data: { datasets: [{ data: [val1, val2], backgroundColor: colors, borderWidth: 0 }] }, options: { cutout: '85%', plugins: { legend: { display: false } }, animation: { duration: 0 } } }; 
-            if(type==='daily'){ if(dailyChartInstance) dailyChartInstance.destroy(); dailyChartInstance=new Chart(ctx, config); } 
-            else{ if(monthlyChartInstance) monthlyChartInstance.destroy(); monthlyChartInstance=new Chart(ctx, config); } 
         }
 
         function exportToExcel() { if (!filteredData.length) return; let csv = "data:text/csv;charset=utf-8,\uFEFFลำดับ,เลขสัญญา,ชื่อ,เบอร์,งวด,ยอด,สถานะ\n"; filteredData.forEach((i, idx) => csv += `${idx+1},"${i.c_no}","${i.b_name}","${i.b_mobile}",${i.installment_no},${i.finalAmount},"${i.status}"\n`); const link = document.createElement("a"); link.href = encodeURI(csv); link.download = "Report.csv"; link.click(); }
@@ -893,44 +986,6 @@
         
         function userProfile() { Swal.fire({ title: 'ข้อมูลผู้ใช้', html: `<b>${currentUser.name}</b><br>สถานะ: ${currentUser.role}`, showDenyButton: true, confirmButtonText: 'เปลี่ยนรหัสผ่าน', denyButtonText: 'ปิด' }).then(r => { if(r.isConfirmed) changePass(); }); }
         async function changePass() { const { value: p } = await Swal.fire({ title: 'ตั้งรหัสใหม่', input: 'password' }); if(p) { await fetch(API_URL, { method:'POST', body:JSON.stringify({action:'change_password', username:currentUser.username, new_pass:p}) }); Swal.fire('สำเร็จ'); } }
-
-        // ✅ ฟังก์ชันพิมพ์ใบรายชื่อติดตามหนี้
-        function printReport() {
-            if (!filteredData || filteredData.length === 0) { Swal.fire('ไม่มีข้อมูล', 'ไม่พบรายการที่จะพิมพ์ในหน้านี้', 'warning'); return; }
-            const dateRaw = document.getElementById('filterDate').value;
-            const dateStr = formatDateToThai(dateRaw);
-            const now = new Date();
-            const printTime = `${now.getHours()}:${("0" + now.getMinutes()).slice(-2)}`;
-
-            let html = `<html><head><title>ใบงานติดตามหนี้_${dateStr}</title>`;
-            html += `<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">`;
-            html += `<style>body { font-family: 'Sarabun', sans-serif; padding: 20px; color:#333; } h2 { text-align: center; margin-bottom: 5px; } .meta { text-align: center; font-size: 14px; margin-bottom: 20px; color: #555; } table { width: 100%; border-collapse: collapse; font-size: 12px; } th { background: #eee; padding: 8px; border: 1px solid #999; text-align: center; font-weight:bold; } td { padding: 6px; border: 1px solid #999; vertical-align: middle; } .text-right { text-align: right; } .text-center { text-align: center; } .badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; color: white; display: inline-block;} .bg-green { background: #27ae60; color:white; } .bg-red { background: #c0392b; color:white; } .bg-purple { background: #8e44ad; color:white; } .bg-orange { background: #f39c12; color:white; } @media print { button { display: none; } @page { size: A4 landscape; margin: 10mm; } } </style></head><body>`;
-            html += `<h2>📑 ใบงานติดตามหนี้ประจำวัน</h2>`;
-            html += `<div class="meta">วันที่เป้าหมาย: <b>${dateStr}</b> | พิมพ์เมื่อ: ${dateStr} เวลา ${printTime} น. | จำนวนรายการ: ${filteredData.length} รายการ</div>`;
-            html += `<table><thead><tr><th width="5%">#</th><th width="10%">เลขสัญญา</th><th width="15%">ชื่อลูกค้า</th><th width="10%">เบอร์โทร</th><th width="8%">งวดที่</th><th width="10%">ยอดชำระ</th><th width="12%">สถานะ</th><th width="30%">หมายเหตุ / ผลการติดตาม</th></tr></thead><tbody>`;
-
-            filteredData.forEach((item, index) => {
-                let statusBadge = "";
-                if (item.status === 'Pending_Approve' || item.status === 'รอตรวจสอบ') statusBadge = `<span class="badge bg-orange">รอตรวจสอบ</span>`;
-                else if (item.status === 'รอปิดยอด') statusBadge = `<span class="badge bg-orange">รอปิดยอด</span>`;
-                else if (item.postpone_date && item.postpone_date !== '-') statusBadge = `<span class="badge bg-purple">เลื่อน: ${item.postpone_date}</span>`;
-                else if (item.overdue_count > 0) statusBadge = `<span class="badge bg-red">ค้าง ${item.overdue_count} งวด</span>`;
-                else statusBadge = `<span class="badge bg-green">ปกติ</span>`;
-
-                let note = item.last_note || "";
-                note = note.replace(/(https?:\/\/[^\s]+)/g, '[รูป/ลิงก์]');
-
-                html += `<tr><td class="text-center">${index + 1}</td><td class="text-center">${item.c_no}</td><td>${item.b_name}</td><td class="text-center">${item.b_mobile}</td><td class="text-center">${item.installment_no}</td><td class="text-right">${parseFloat(item.finalAmount).toLocaleString()}</td><td class="text-center">${statusBadge}</td><td>${note}</td></tr>`;
-            });
-
-            html += `</tbody></table>`;
-            html += `<div style="margin-top:20px; font-size:12px; text-align:right;">ผู้พิมพ์รายงาน: ${currentUser ? currentUser.name : '-'}</div>`;
-            html += `<div style="text-align:center; margin-top:20px;"><button onclick="window.print()" style="padding:10px 20px; cursor:pointer;">🖨️ สั่งพิมพ์หน้านี้</button></div></body></html>`;
-
-            const win = window.open('', '_blank');
-            win.document.write(html);
-            win.document.close();
-        }
     </script>
 </body>
 </html>
