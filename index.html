@@ -207,7 +207,7 @@
 
     <script>
         // 🔴🔴 ใส่ลิงก์ API (Web App URL) ของคุณที่นี่ 🔴🔴
-        const API_URL = 'https://script.google.com/macros/s/AKfycbz0xIxWcSjcwfKpyAaAvYF0UeiF4Zn30qCo9d5FAbhW-Lae2RM_3YNZ25eD2HiDDgAI/exec'; 
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxfIDTheX_LXy9OK4n9h8MN3wyIXHaU9aB7HhSw4RR69OQH4jDrtm9OIUWR6Ve7FWhh/exec'; 
         
         let currentUser = null;
         let currentTrackingData = [], filteredData = [], globalSummary = {};
@@ -485,6 +485,15 @@
         }
 
         function createCardHtml(c) {
+            // 🔴 ส่วนที่เพิ่มใหม่: ตรวจสอบและคำนวณค่าตัวแปรที่ขาดหายไป (สำหรับหน้าค้นหาและหน้าปิดยอด)
+            if (c.finalAmount === undefined) {
+                c.finalAmount = parseFloat(c.amount || 0) * (c.overdue_count > 1 ? c.overdue_count : 1);
+            }
+            if (c.hasPostpone === undefined) {
+                c.hasPostpone = (c.postpone_date && c.postpone_date !== "-" && c.postpone_date !== "");
+            }
+            // 🔴 จบส่วนที่เพิ่ม
+
             const isAdmin = currentUser.role === 'admin';
             let cardClass = isSearchMode ? "card-search-result" : "card-normal"; 
             let statusHtml = `<span class="status-text text-green"><i class="fas fa-check-circle"></i> ปกติ</span>`;
