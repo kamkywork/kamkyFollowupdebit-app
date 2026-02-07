@@ -710,80 +710,100 @@
         async function changePass() { const { value: p } = await Swal.fire({ title: 'ตั้งรหัสใหม่', input: 'password' }); if(p) { await fetch(API_URL, { method:'POST', body:JSON.stringify({action:'change_password', username:currentUser.username, new_pass:p}) }); Swal.fire('สำเร็จ'); } }
 
         // [แก้ไข] ฟังก์ชันพิมพ์รายงานแบบ Overlay พร้อมเรียงลำดับและจัดหน้าตาใหม่
+        // [แก้ไขล่าสุด] รายงานสัญญาทั้งหมด (รวมปิดยอด) + เรียงตามเลขสัญญา
         function printReport() {
             try {
-                // 1. เช็คข้อมูลก่อน
-                if (!filteredData || filteredData.length === 0) { 
+                // 1. ใช้ currentTrackingData แทน filteredData เพื่อให้ได้ข้อมูลครบทุกสถานะ (รวมปิดยอด/ซ่อน)
+                let dataSource = currentTrackingData;
+
+                if (!dataSource || dataSource.length === 0) { 
                     Swal.fire({
                         icon: 'warning',
                         title: 'ไม่มีข้อมูล', 
-                        text: 'กรุณาค้นหา หรือเลือกวันที่ที่มีรายการก่อนสั่งพิมพ์',
+                        text: 'กรุณารอโหลดข้อมูล หรือเลือกวันที่ให้ถูกต้อง',
                         confirmButtonColor: '#f39c12'
                     }); 
                     return; 
                 }
 
-                // 2. เตรียมวันที่เวลา
                 const now = new Date(); 
                 const dateStr = `${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()+543}`; 
                 const timeStr = `${now.getHours()}:${now.getMinutes().toString().padStart(2,'0')}`;
 
-                // 3. เรียงลำดับข้อมูล (เพิ่มความปลอดภัย: แปลงเป็น String ก่อนเทียบ ป้องกัน Error)
-                let sortedForPrint = [...filteredData].sort((a, b) => {
-                    let valA = (a.c_no || "").toString(); // ถ้าไม่มีค่า ให้เป็นค่าว่าง
+                // 2. เตรียมข้อมูล (คำนวณยอดเงิน และเรียงลำดับ)
+                // ต้อง Map ข้อมูลใหม่เพื่อคำนวณ finalAmount เพราะ currentTrackingData เป็นข้อมูลดิบ
+                let preparedData = dataSource.map(c => {
+                    let amt = parseFloat(c.amount || 0) * (c.overdue_count > 1 ? c.overdue_count : 1);
+                    return { ...c, finalAmount: amt };
+                });
+
+                // เรียงตามเลขที่สัญญา (น้อย -> มาก)
+                let sortedForPrint = preparedData.sort((a, b) => {
+                    let valA = (a.c_no || "").toString();
                     let valB = (b.c_no || "").toString();
                     return valA.localeCompare(valB, undefined, {numeric: true, sensitivity: 'base'});
                 });
 
-                // 4. สร้าง HTML ของแต่ละแถว
+                // 3. สร้างแถวตาราง
                 let tableRows = sortedForPrint.map((item, index) => { 
-                    let statusColor = item.overdue_count > 0 ? 'color:red;' : 'color:#2980b9;'; 
+                    let statusColor = '#2980b9'; // สีปกติ (ฟ้าเข้ม)
                     let statusText = item.status || '-'; 
-                    
-                    if(item.overdue_count > 0) statusText = `ค้าง ${item.overdue_count} งวด`; 
-                    else if(item.status === 'Paid' || item.status === 'Close') statusText = 'ปิดยอดแล้ว'; 
-                    else if(item.status === 'Pending_Approve') statusText = 'รอตรวจสอบ'; 
+                    let rowStyle = "";
+
+                    // ตรวจสอบสถานะเพื่อกำหนดสีและข้อความ
+                    if (item.overdue_count > 0) {
+                        statusColor = 'red';
+                        statusText = `ค้าง ${item.overdue_count} งวด`;
+                    } else if (item.status === 'Paid' || item.status === 'Close') {
+                        statusColor = '#27ae60'; // สีเขียวสำหรับปิดยอด
+                        statusText = 'ปิดยอดแล้ว';
+                        rowStyle = "background-color: #f0fff4;"; // ไฮไลท์พื้นหลังสีเขียวอ่อนบางๆ ให้รู้ว่าจบแล้ว
+                    } else if (item.status === 'Pending_Approve') {
+                        statusColor = '#e67e22';
+                        statusText = 'รอตรวจสอบ';
+                    }
                     
                     return `
-                        <tr style="border-bottom: 1px solid #ddd;">
-                            <td style="text-align:center; padding:10px 5px; border-right:1px solid #eee;">${index + 1}</td>
-                            <td style="padding:10px 5px; border-right:1px solid #eee; font-weight:bold;">${item.c_no || '-'}</td>
-                            <td style="padding:10px 5px; border-right:1px solid #eee;">
+                        <tr style="border-bottom: 1px solid #ddd; ${rowStyle}">
+                            <td style="text-align:center; padding:8px 5px; border-right:1px solid #eee;">${index + 1}</td>
+                            <td style="padding:8px 5px; border-right:1px solid #eee; font-weight:bold;">${item.c_no || '-'}</td>
+                            <td style="padding:8px 5px; border-right:1px solid #eee;">
                                 ${item.b_name || '-'} <br> 
                                 <span style="font-size:11px; color:#666;">${item.b_mobile || ''}</span>
                             </td>
-                            <td style="text-align:right; padding:10px 5px; border-right:1px solid #eee;">
-                                ${(parseFloat(item.finalAmount) || 0).toLocaleString()}
+                            <td style="text-align:right; padding:8px 5px; border-right:1px solid #eee;">
+                                ${(item.finalAmount || 0).toLocaleString()}
                             </td>
-                            <td style="text-align:center; padding:10px 5px; border-right:1px solid #eee; ${statusColor}">
+                            <td style="text-align:center; padding:8px 5px; border-right:1px solid #eee; color:${statusColor}; font-weight:600;">
                                 ${statusText}
                             </td>
-                            <td style="padding:10px 5px; font-size:11px; color:#555;">${item.last_note || '-'}</td>
+                            <td style="padding:8px 5px; font-size:11px; color:#555;">${item.last_note || '-'}</td>
                         </tr>`; 
                 }).join('');
 
-                // 5. สร้างหน้าตา Overlay (รายงาน)
+                // 4. สร้าง HTML รายงาน
                 const reportHtml = `
                     <div style="font-family: 'Sarabun', sans-serif; padding: 20px; max-width: 1000px; margin: 0 auto; background: white; min-height: 100vh;">
                         <style>
-                            .print-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
-                            .print-table th { background-color: #2c3e50 !important; color: white !important; padding: 12px 8px; border: 1px solid #34495e; }
-                            .print-table tr:nth-child(even) { background-color: #f8f9fa !important; }
+                            .print-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+                            .print-table th { background-color: #2c3e50 !important; color: white !important; padding: 10px 5px; border: 1px solid #34495e; }
+                            /* Zebra Striping (เฉพาะแถวที่ไม่ได้กำหนดสีพื้นหลังไว้เอง) */
+                            .print-table tr:not([style*="background-color"]):nth-child(even) { background-color: #f8f9fa !important; }
                         </style>
 
                         <div class="no-print" style="text-align:center; margin-bottom:20px; position:sticky; top:0; background:white; padding:15px; border-bottom:1px solid #ddd; z-index:100; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-                            <button onclick="window.print()" style="background:#4834d4; color:white; border:none; padding:12px 30px; border-radius:30px; font-size:16px; cursor:pointer; margin-right:10px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+                            <button onclick="window.print()" style="background:#4834d4; color:white; border:none; padding:10px 25px; border-radius:30px; font-size:16px; cursor:pointer; margin-right:10px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
                                 <i class="fas fa-print"></i> พิมพ์ / PDF
                             </button>
-                            <button onclick="document.getElementById('printOverlay').style.display='none'" style="background:#eb4d4b; color:white; border:none; padding:12px 30px; border-radius:30px; font-size:16px; cursor:pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+                            <button onclick="document.getElementById('printOverlay').style.display='none'" style="background:#eb4d4b; color:white; border:none; padding:10px 25px; border-radius:30px; font-size:16px; cursor:pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
                                 ❌ ปิด
                             </button>
                         </div>
                         
                         <div style="text-align:center; margin-bottom:20px;">
-                            <h2 style="margin:0; color:#2c3e50; font-size:24px;">รายงานติดตามหนี้</h2>
+                            <h2 style="margin:0; color:#2c3e50; font-size:22px;">รายงานสัญญาทั้งหมด</h2>
                             <div style="font-size:14px; color:#555; margin-top:5px;">
-                                พิมพ์เมื่อ: ${dateStr} เวลา ${timeStr} | จำนวน: ${sortedForPrint.length} รายการ
+                                พิมพ์เมื่อ: ${dateStr} เวลา ${timeStr} | ทั้งหมด: ${sortedForPrint.length} รายการ
                             </div>
                         </div>
                         
@@ -805,23 +825,16 @@
                     </div>
                 `;
 
-                // 6. แสดงผล
+                // 5. แสดงผล
                 const overlay = document.getElementById('printOverlay');
                 if(overlay) {
                     overlay.innerHTML = reportHtml;
                     overlay.style.display = 'block';
-                } else {
-                    console.error("ไม่พบ Element ID: printOverlay");
-                    alert("ไม่พบพื้นที่แสดงผลรายงาน (printOverlay)");
                 }
 
             } catch (error) {
                 console.error("Print Error:", error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'เกิดข้อผิดพลาด',
-                    text: 'รายละเอียด: ' + error.message
-                });
+                Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: error.message });
             }
         }
 		
