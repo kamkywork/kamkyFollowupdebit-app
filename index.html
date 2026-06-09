@@ -656,8 +656,7 @@ let isTargetToday = (isPostponedToToday) || (isDueToday && !hasPostpone) || (isR
         item.overdue_count = 0; // รีเซ็ตเฉพาะสัญญาปกติที่ไม่เคยค้าง
     }
     item.worksheetStatus = 'ปกติ';
-    contractGroups.normal.push(item); 
-} 
+    contractGroups.normal.push(item);  
                     } else if (isOverdue) { 
                         contractGroups.overdue.push(item); 
                     }
